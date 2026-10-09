@@ -12,6 +12,23 @@ from exemplos.criar_demo import pdf_ficticio, documento
 
 
 class OnlineTests(unittest.TestCase):
+    def test_windows_usa_edge_visivel_sem_perfil_pessoal(self):
+        with patch.object(online.sys,'platform','win32'):
+            self.assertEqual(online.opcoes_navegador(None),{'headless':False,'proxy':None,'channel':'msedge'})
+
+    def test_linux_preserva_chromium(self):
+        with patch.object(online.sys,'platform','linux'),patch.object(online.shutil,'which',return_value='/usr/bin/chromium'):
+            self.assertEqual(online.opcoes_navegador(None),{'headless':True,'proxy':None,'executable_path':'/usr/bin/chromium'})
+
+    def test_403_inicial_interrompe_sem_pesquisar(self):
+        browser=MagicMock();page=browser.new_context.return_value.new_page.return_value
+        page.goto.return_value.status=403
+        with tempfile.TemporaryDirectory() as tmp,patch.object(online,'preparar_filtros') as filtros:
+            itens,pendencias,totais=online.coletar(browser,Path(tmp),date(2026,10,9),[],lambda m:None)
+        filtros.assert_not_called();self.assertEqual(browser.new_context.call_count,1)
+        self.assertEqual(itens,[]);self.assertEqual(totais,{})
+        self.assertIn('Nenhum total foi obtido',pendencias[0])
+
     def test_paginacao_e_erro_nao_sao_zero(self):
         self.assertEqual(online.paginacao('Resultado: 31 Instrumento(s) Coletivo(s) Encontrado(s) - Página 2 de 4'),(31,2,4))
         self.assertEqual(online.paginacao('Resultado: 0 Instrumento(s) Coletivo(s) Encontrado(s)'),(0,1,1))

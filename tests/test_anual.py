@@ -77,5 +77,13 @@ class AnualTests(unittest.TestCase):
             self.assertIsNone(wb['Pendências']['B2'].value)
             self.assertIn('CONSULTA COM PENDÊNCIAS',(out/'instrumentos_consultados_AL.txt').read_text())
 
+    def test_falha_de_acesso_aparece_no_relatorio_sem_documentos(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p=Path(tmp);out=p/'resultado';out.mkdir()
+            online.gerar_relatorio([],[],p,out,date(2026,1,1),self.hoje,False,['HTTP 403: acesso recusado'])
+            self.assertIn('FALHA DE CONSULTA: HTTP 403',(out/'instrumentos_consultados_AL.txt').read_text())
+            wb=load_workbook(out/'instrumentos_consultados_AL.xlsx')
+            self.assertEqual(wb['Consulta'].cell(wb['Consulta'].max_row,2).value,'HTTP 403: acesso recusado')
+
 
 if __name__ == '__main__':unittest.main()

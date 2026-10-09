@@ -12,6 +12,14 @@ Na consulta anual posterior, de **01/01/2026 a 09/10/2026**, o portal retornou *
 
 ## Origem do 403 e solução de acesso
 
+### Ocorrência no Windows do usuário
+
+O log fornecido pelo usuário registra HTTP 403 na navegação inicial de `ConsultarInstColetivo`, antes dos filtros. Não houve contagem oficial nem documento coletado. No mesmo computador, o formulário abre manualmente no Chrome ou Edge, conforme confirmação do usuário. Isso diferencia o comportamento das duas navegações, mas não identifica a origem exata da recusa nem comprova que o portal permite a automação nessa conexão.
+
+O coletor agora usa o Microsoft Edge instalado com janela visível no Windows, em sessão separada. Não há reutilização de cookies do perfil pessoal, disfarce de automação ou repetição automática depois de 403. Essa mudança de compatibilidade foi coberta por testes de seleção do navegador e interrupção diante de bloqueio; não foi testada em um Windows real. A consulta real anterior no Linux não comprova acesso no computador do usuário. O retorno completo passa a apresentar também as falhas de consulta, mesmo quando não há documentos pendentes individualmente.
+
+### Ocorrência anterior no ambiente na nuvem
+
 Inicialmente Python informou `Tunnel connection failed: 403 Forbidden`, e Chromium informou `net::ERR_TUNNEL_CONNECTION_FAILED`. O proxy recusava o túnel CONNECT antes de entregar a página: os domínios não estavam na lista de rede permitida. Não havia evidência de recusa pelo Mediador.
 
 Foi salvo um rascunho acrescentando `mediador.trabalho.gov.br`, `www3.mte.gov.br`, `www.gov.br`, `www.google.com` e `www.gstatic.com`, preservando os presets. Os dois últimos são referenciados pelo reCAPTCHA original. O salvamento é confirmado, mas não comprova publicação do ambiente. Após a mudança, Python recebeu HTTP 200.

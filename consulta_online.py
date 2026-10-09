@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import re
 import shutil
+import sys
 from urllib.parse import urljoin, urlsplit
 import uuid
 from zoneinfo import ZoneInfo
@@ -17,6 +18,18 @@ TIPOS = ('convencao', 'termoAditivoConvecao')
 
 class ConsultaIncompleta(RuntimeError):
     pass
+
+
+def opcoes_navegador(proxy):
+    """No Windows, usa o Edge instalado com janela e sessão separada."""
+    options = {'headless': sys.platform != 'win32', 'proxy': proxy}
+    if sys.platform == 'win32':
+        options['channel'] = 'msedge'
+    else:
+        executavel = shutil.which('chromium') or shutil.which('chromium-browser')
+        if executavel:
+            options['executable_path'] = executavel
+    return options
 
 
 def captcha_interativo(page):
@@ -164,6 +177,10 @@ def coletar(browser, pasta, hoje, eventos, progresso, inicio=None, catalogo=None
         try:
             resposta = page.goto(URL, wait_until='domcontentloaded', timeout=45000)
             if resposta is None or resposta.status != 200:
+                if resposta is not None and resposta.status == 403:
+                    raise ConsultaIncompleta('HTTP 403: acesso recusado antes da pesquisa. Nenhum total foi obtido; '
+                                             'não significa ausência de convenções. A origem da recusa não foi confirmada. '
+                                             'Abra o endereço oficial no navegador para comparar o acesso. Não houve tentativa de contornar o bloqueio')
                 raise ConsultaIncompleta('Página de consulta não disponível: HTTP '+str(resposta.status if resposta else 'sem resposta'))
             if page.locator('input[type="password"]').count():
                 raise ConsultaIncompleta('Autenticação exigida; acesso automático interrompido')
@@ -229,7 +246,7 @@ def coletar(browser, pasta, hoje, eventos, progresso, inicio=None, catalogo=None
     return instrumentos, pendencias, totais
 
 
-def gerar_relatorio(catalogo, instrumentos, pasta, resultado, inicio, fim, completo):
+def gerar_relatorio(catalogo, instrumentos, pasta, resultado, inicio, fim, completo, falhas_consulta=None):
     """Lista todos os documentos da consulta, inclusive os já presentes no controle."""
     from openpyxl import Workbook
     import csv
@@ -266,6 +283,8 @@ def gerar_relatorio(catalogo, instrumentos, pasta, resultado, inicio, fim, compl
     estado.append(['Resultado', 'Consulta completa' if completo else 'COM PENDÊNCIAS — lista não confirmada como completa'])
     estado.append(['Documentos validados', len(validos)])
     estado.append(['Documentos pendentes', len(pendentes)])
+    for falha in falhas_consulta or []:
+        estado.append(['Falha de consulta', falha])
     if not completo:
         wb.active = wb.sheetnames.index('Consulta')
     wb.save(resultado/'instrumentos_consultados_AL.xlsx')
@@ -279,6 +298,7 @@ def gerar_relatorio(catalogo, instrumentos, pasta, resultado, inicio, fim, compl
              'Esta lista inclui os registros já existentes no controle.']
     texto.extend(f'{d["Registro"]} | {d["Tipo"]} | registro em {d["Data de registro"]} | {d["Fonte"]}' for d in validos)
     texto.extend(f'PENDENTE: {d.get("Registro", d.get("Solicitação", "sem identificador"))} | {d["Status"]}' for d in pendentes)
+    texto.extend('FALHA DE CONSULTA: '+falha for falha in falhas_consulta or [])
     (resultado/'instrumentos_consultados_AL.txt').write_text('\n'.join(texto)+'\n', encoding='utf-8')
 
 
@@ -298,11 +318,17 @@ def executar_online(controle=None, raiz=Path('saidas'), aba=None, progresso=lamb
         from playwright.sync_api import sync_playwright
         proxy = proxy_do_ambiente()
         with sync_playwright() as p:
-            options = {'headless': True, 'proxy': proxy}
-            executavel = shutil.which('chromium') or shutil.which('chromium-browser')
-            if executavel:
-                options['executable_path'] = executavel
-            browser = p.chromium.launch(**options)
+            options = opcoes_navegador(proxy)
+            eventos.append('Navegador: '+('Microsoft Edge com janela visível; sessão separada' if sys.platform == 'win32'
+                                        else 'Chromium sem janela; sessão separada'))
+            progresso('Abrindo o navegador para a consulta automática…')
+            try:
+                browser = p.chromium.launch(**options)
+            except Exception as exc:
+                if sys.platform == 'win32' and 'distribution' in str(exc) and 'not found' in str(exc):
+                    raise ValueError('Microsoft Edge não encontrado. Instale o Edge pelo site oficial da Microsoft e execute novamente. '
+                                     'A consulta não foi iniciada') from exc
+                raise
             try:
                 instrumentos, pendencias, totais = coletar(browser, docs, fim, eventos, progresso, inicio=inicio, catalogo=catalogo)
             finally:
@@ -322,7 +348,7 @@ def executar_online(controle=None, raiz=Path('saidas'), aba=None, progresso=lamb
     resumo = resultado/'resumo_convencoes_AL.txt'
     resumo.write_text(resumo.read_text(encoding='utf-8')+'Totais oficiais por tipo: '+str(totais)+'\n'+
                      ('Pendências: '+'; '.join(pendencias)+'\n' if pendencias else ''), encoding='utf-8')
-    gerar_relatorio(catalogo, instrumentos, pasta, resultado, inicio, fim, completo and code == 0)
+    gerar_relatorio(catalogo, instrumentos, pasta, resultado, inicio, fim, completo and code == 0, pendencias)
     resumo.write_text(resumo.read_text(encoding='utf-8')+f'Instrumentos listados nesta consulta (inclusive já existentes): {len(catalogo)}\nRelatório completo: instrumentos_consultados_AL.xlsx e instrumentos_consultados_AL.txt\n', encoding='utf-8')
     return {'codigo': code, 'pasta': resultado, 'controle': resultado/'controle_convencoes_AL.xlsx',
             'completa': completo and code == 0, 'resumo': resumo.read_text(encoding='utf-8'),

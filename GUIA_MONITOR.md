@@ -19,6 +19,10 @@ Depois dê dois cliques em **`abrir_monitor.bat`**. Também é possível abrir c
 .venv\Scripts\python.exe interface.py
 ```
 
+No Windows, o Microsoft Edge precisa estar instalado. Ao clicar em **Consultar novidades**, o programa abre uma janela visível do Edge, em uma sessão separada do seu perfil pessoal. Aguarde sem fechar ou usar essa janela: o preenchimento dos filtros e a coleta continuam automáticos. No Linux, o coletor mantém o Chromium sem janela.
+
+Essa mudança permite testar a compatibilidade com o navegador instalado depois do HTTP 403 relatado no Windows, onde a abertura manual do formulário funcionava. A causa exata do bloqueio não está confirmada; o Edge continua identificado como automatizado. Não são usados recursos para ocultar automação ou alterar as proteções do portal. Se o Edge também receber HTTP 403, a consulta é interrompida sem trocar de navegador ou repetir o acesso para contornar a recusa. O sucesso desta mudança no Windows ainda precisa de confirmação no computador do usuário; a validação anual anterior foi feita em Linux.
+
 Na janela:
 
 1. Se já houver controle, selecione a planilha `.xlsx` uma vez. Se houver várias abas, informe a aba. Sem controle, será criado um modelo novo.
@@ -89,7 +93,7 @@ A interface distingue consulta concluída de consulta com pendências. Na linha 
 .venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-Foram executados **28 testes com dados fictícios**, abrangendo períodos anual e semanal, rejeição de ACTs, número de registro versus número de solicitação, registros da SRT com cinco ou seis dígitos, preservação do controle, retorno anual de registros já existentes, repetição sem duplicatas, classificação de falhas, retorno HTTP 500 e conexão do botão com a coleta online. Os testes fictícios não comprovam acesso à fonte oficial.
+Foram executados **32 testes com dados fictícios**, abrangendo períodos anual e semanal, rejeição de ACTs, número de registro versus número de solicitação, registros da SRT com cinco ou seis dígitos, preservação do controle, retorno anual de registros já existentes, repetição sem duplicatas, classificação de falhas, retorno HTTP 500 e conexão do botão com a coleta online. Os testes fictícios não comprovam acesso à fonte oficial.
 
 Também foi executado um teste real pela internet: CCT **AL000242/2026**, registrada em **07/10/2026**, com abrangência confirmada em AL. O programa baixou o original `.doc`, acessou a visualização oficial, gerou um PDF de impressão e acrescentou uma linha à planilha de teste. Uma segunda execução online com essa planilha acrescentou **zero linhas**, sem duplicar o registro. Na pesquisa de aditivos, o erro HTTP 500 foi registrado nas duas execuções.
 

@@ -69,6 +69,7 @@ class Aplicacao:
         self.texto.configure(yscrollcommand=rolagem.set)
         self.mostrar('Ao clicar, o programa consulta o Mediador, obtém os documentos e gera uma nova cópia do controle.\n'
                      'Nenhum PDF ou arquivo de resultados precisa ser fornecido.\n'
+                     'No Windows, uma janela do Edge será aberta e controlada pelo programa; aguarde sem fechar.\n'
                      'Se o portal bloquear o acesso, o relatório indicará consulta incompleta.\n'
                      'Sem controle selecionado, será criado um modelo novo.\n')
         root.protocol('WM_DELETE_WINDOW', self.fechar)
