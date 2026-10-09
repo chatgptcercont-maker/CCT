@@ -19,6 +19,7 @@ class InterfaceTests(unittest.TestCase):
             p=Path(tmp);novo=p/'controle.xlsx';novo.write_bytes(b'arquivo ficticio de resultado')
             app=Aplicacao.__new__(Aplicacao)
             app.root=MagicMock();app.config={};app.controle=Valor();app.aba=Valor();app.status=Valor()
+            app.periodo=Valor('Ano de 2026');app.campo_periodo=MagicMock()
             app.fila=queue.Queue();app.ocupado=False;app.mostrar=MagicMock();app.ultima_pasta=None
             for nome in ['consultar','escolher','campo_controle','campo_aba','progresso','abrir']:setattr(app,nome,MagicMock())
             result={'pasta':p,'controle':novo,'completa':False,'resumo':'Consulta com pendências'}
@@ -28,6 +29,7 @@ class InterfaceTests(unittest.TestCase):
                 app.iniciar();app.atualizar()
                 online.assert_called_once()
                 self.assertIsNone(online.call_args.args[0])
+                self.assertEqual(online.call_args.kwargs['ano'],2026)
                 self.assertEqual(online.call_args.args[1],p/'saidas')
                 self.assertEqual(app.controle.get(),str(novo.resolve()))
                 self.assertFalse(app.ocupado)

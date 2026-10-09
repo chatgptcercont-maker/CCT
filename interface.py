@@ -42,10 +42,15 @@ class Aplicacao:
         self.config = carregar_config()
         self.controle = tk.StringVar(value=self.config.get('controle', ''))
         self.aba = tk.StringVar(value=self.config.get('aba', ''))
+        self.periodo = tk.StringVar(value=self.config.get('periodo', 'Ano de 2026'))
         self.status = tk.StringVar(value='Pronto para consultar a fonte oficial. Não há agendamento.')
         frame = ttk.Frame(root, padding=16); frame.pack(fill='both', expand=True)
         ttk.Label(frame, text='Monitor Diário de Convenções e Aditivos — Alagoas', font=('Segoe UI', 15, 'bold')).pack(anchor='w')
-        ttk.Label(frame, text='CCTs e aditivos de CCT · sete dias de registro · abrangência em Alagoas').pack(anchor='w', pady=(4, 14))
+        ttk.Label(frame, text='CCTs e aditivos de CCT · abrangência em Alagoas').pack(anchor='w', pady=(4, 14))
+        periodo = ttk.Frame(frame); periodo.pack(fill='x', pady=4)
+        ttk.Label(periodo, text='Período de registro:').pack(side='left')
+        self.campo_periodo = ttk.Combobox(periodo, textvariable=self.periodo, values=['Ano de 2026', 'Últimos 7 dias'], state='readonly', width=24)
+        self.campo_periodo.pack(side='left', padx=8)
         ttk.Label(frame, text='Controle existente (opcional na primeira execução; arquivo original preservado):').pack(anchor='w')
         entrada = ttk.Frame(frame); entrada.pack(fill='x', pady=4)
         self.campo_controle = ttk.Entry(entrada, textvariable=self.controle); self.campo_controle.pack(side='left', fill='x', expand=True)
@@ -58,7 +63,10 @@ class Aplicacao:
         self.abrir = ttk.Button(botoes, text='Abrir resultados', command=self.abrir_resultados, state='disabled'); self.abrir.pack(side='left', padx=8)
         ttk.Label(frame, textvariable=self.status, wraplength=820).pack(anchor='w', pady=4)
         self.progresso = ttk.Progressbar(frame, mode='indeterminate'); self.progresso.pack(fill='x', pady=6)
-        self.texto = tk.Text(frame, wrap='word', height=20); self.texto.pack(fill='both', expand=True)
+        painel = ttk.Frame(frame); painel.pack(fill='both', expand=True)
+        self.texto = tk.Text(painel, wrap='word', height=20); self.texto.pack(side='left', fill='both', expand=True)
+        rolagem = ttk.Scrollbar(painel, command=self.texto.yview); rolagem.pack(side='right', fill='y')
+        self.texto.configure(yscrollcommand=rolagem.set)
         self.mostrar('Ao clicar, o programa consulta o Mediador, obtém os documentos e gera uma nova cópia do controle.\n'
                      'Nenhum PDF ou arquivo de resultados precisa ser fornecido.\n'
                      'Se o portal bloquear o acesso, o relatório indicará consulta incompleta.\n'
@@ -83,7 +91,8 @@ class Aplicacao:
         if controle is not None and not controle.is_file():
             messagebox.showerror('Controle indisponível', 'O controle selecionado não existe. Corrija o caminho antes de consultar.')
             return
-        self.config.update({'controle': str(controle) if controle else '', 'aba': self.aba.get().strip()})
+        ano = 2026 if self.periodo.get() == 'Ano de 2026' else None
+        self.config.update({'controle': str(controle) if controle else '', 'aba': self.aba.get().strip(), 'periodo': self.periodo.get()})
         try:
             salvar_config(self.config)
         except OSError as exc:
@@ -91,13 +100,14 @@ class Aplicacao:
         self.ocupado = True
         for widget in [self.consultar, self.escolher, self.campo_controle, self.campo_aba]:
             widget.configure(state='disabled')
+        self.campo_periodo.configure(state='disabled')
         self.status.set('Consultando o Mediador…'); self.mostrar('Consulta em andamento. Aguarde o relatório.'); self.progresso.start()
         aba = self.aba.get().strip() or None
-        threading.Thread(target=self.trabalhar, args=(controle, aba), daemon=True).start()
+        threading.Thread(target=self.trabalhar, args=(controle, aba, ano), daemon=True).start()
 
-    def trabalhar(self, controle, aba):
+    def trabalhar(self, controle, aba, ano=None):
         try:
-            resultado = executar_online(controle, BASE/'saidas', aba, lambda m: self.fila.put(('progresso', m)))
+            resultado = executar_online(controle, BASE/'saidas', aba, lambda m: self.fila.put(('progresso', m)), ano=ano)
             self.fila.put(('resultado', resultado))
         except Exception as exc:
             self.fila.put(('erro', f'Consulta não concluída: {type(exc).__name__}. Verifique permissões da pasta e instalação.'))
@@ -112,12 +122,13 @@ class Aplicacao:
                     self.ocupado = False; self.progresso.stop()
                     for widget in [self.consultar, self.escolher, self.campo_controle, self.campo_aba]:
                         widget.configure(state='normal')
+                    self.campo_periodo.configure(state='readonly')
                     if tipo == 'erro':
                         self.status.set('Consulta não concluída.'); self.mostrar(dado)
                     else:
                         self.ultima_pasta = dado['pasta']; self.abrir.configure(state='normal')
                         self.status.set('Consulta concluída.' if dado['completa'] else 'Consulta com pendências. Confira o relatório e o log.')
-                        self.mostrar(dado['resumo']+'\nArquivos: '+str(dado['pasta']))
+                        self.mostrar(dado['resumo']+'\n'+dado.get('relatorio', '')+'\nArquivos: '+str(dado['pasta']))
                         if dado['controle'].is_file():
                             # A próxima execução compara com a cópia cumulativa, sem tocar no original.
                             self.controle.set(str(dado['controle'].resolve()))

@@ -20,6 +20,7 @@ class OnlineTests(unittest.TestCase):
 
     def test_registro_nacional_e_solicitacao(self):
         self.assertEqual(monitor.extrair(documento(numero='SRT000001/2026'),date(2026,10,8))['Registro'],'SRT000001/2026')
+        self.assertEqual(monitor.extrair(documento(numero='SRT00001/2026'),date(2026,10,8))['Registro'],'SRT00001/2026')
         with self.assertRaises(ValueError): monitor.registro('MR063147/2026')
 
     def test_http_500_interrompe_sem_zero(self):
@@ -55,7 +56,7 @@ class OnlineTests(unittest.TestCase):
             p=Path(tmp);wb,ws,_,_=monitor.abrir_controle(None)
             ws.append(['AL000099/2026','01/01/2026','Anterior','AL','antes.pdf','fonte','=1+1'])
             controle=p/'original.xlsx';wb.save(controle);original=controle.read_bytes()
-            def coleta(browser,docs,hoje,eventos,progresso):
+            def coleta(browser,docs,hoje,eventos,progresso,inicio=None,catalogo=None):
                 pdf_ficticio(docs/'novo.pdf',documento())
                 return [{'registro':'AL000001/2026','arquivo':'documentos/novo.pdf','fonte':online.URL}],[],{'convencao':1,'termoAditivoConvecao':0}
             with patch.object(online,'coletar',side_effect=coleta),patch.object(online,'hoje_alagoas',return_value=date(2026,10,8)),patch('playwright.sync_api.sync_playwright'):

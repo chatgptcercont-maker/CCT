@@ -15,7 +15,7 @@ from pypdf import PdfReader
 
 CONSULTA = 'https://mediador.trabalho.gov.br/sistemas/mediador/ConsultarInstColetivo'
 COLUNAS = ['Registro', 'Data de registro', 'Tipo', 'Abrangência territorial', 'Documento', 'Fonte', 'SHA256']
-REGEX_REGISTRO = r'(?:SRT|AC|AL|AM|AP|BA|CE|DF|ES|GO|MA|MG|MS|MT|PA|PB|PE|PI|PR|RJ|RN|RO|RR|RS|SC|SE|SP|TO)\d{6}/\d{4}'
+REGEX_REGISTRO = r'(?:SRT\d{5,6}|(?:AC|AL|AM|AP|BA|CE|DF|ES|GO|MA|MG|MS|MT|PA|PB|PE|PI|PR|RJ|RN|RO|RR|RS|SC|SE|SP|TO)\d{6})/\d{4}'
 
 
 def normalizar(texto):
@@ -29,7 +29,7 @@ def registro(valor):
     return valor
 
 
-def extrair(texto, hoje):
+def extrair(texto, hoje, inicio=None):
     """Campos vêm exclusivamente do texto do documento; dúvida impede inclusão."""
     n = normalizar(texto)
     titulo = n[:3000]
@@ -48,8 +48,9 @@ def extrair(texto, hoje):
     if len(set(regs)) != 1 or len(set(datas)) != 1:
         raise ValueError('Registro ou data ambíguos/ausentes; conferir documento')
     data = datetime.strptime(datas[0], '%d/%m/%Y').date()
-    if not hoje - timedelta(days=6) <= data <= hoje:
-        raise ValueError('Excluído: data de registro fora dos sete dias inclusivos')
+    inicio = inicio or hoje - timedelta(days=6)
+    if not inicio <= data <= hoje:
+        raise ValueError('Excluído: data de registro fora do período consultado')
     # A UF do número de registro não prova abrangência territorial.
     trecho = re.search(r'(?:^|\n)\s*(?:CLAUSULA[^\n]*?[-–]\s*)?ABRANGENCIA(?: TERRITORIAL)?[ \t:]*\n(.*?)(?=\n\s*(?:CLAUSULA|SALARIOS|REMUNERACAO)|\Z)', n, re.S)
     if not trecho or not re.search(r'\bALAGOAS\b|(?:/|\bUF\s*[:=]?)\s*AL\b|\bAL\b', trecho[1]):
@@ -108,7 +109,7 @@ def abrir_controle(caminho, aba=None):
     return wb, ws, headers, existentes
 
 
-def executar(manifesto, controle, saida, hoje, aba=None, modo="assistido"):
+def executar(manifesto, controle, saida, hoje, aba=None, modo="assistido", inicio=None):
     saida.mkdir(parents=True, exist_ok=False)
     eventos, novos = [], []
     erro = False
@@ -135,7 +136,7 @@ def executar(manifesto, controle, saida, hoje, aba=None, modo="assistido"):
                 caminho = (base / relativo).resolve()
                 if relativo.is_absolute() or not caminho.is_relative_to(base):
                     raise ValueError('PDF deve estar dentro da pasta do manifesto')
-                dados = extrair(ler_pdf(caminho), hoje)
+                dados = extrair(ler_pdf(caminho), hoje, inicio)
                 if item.get('registro') and registro(item['registro']) != dados['Registro']:
                     raise ValueError('Registro do resultado diverge do PDF')
                 if dados['Registro'] in existentes:
@@ -158,7 +159,7 @@ def executar(manifesto, controle, saida, hoje, aba=None, modo="assistido"):
         erro = True
         novos.clear()
         eventos.append(f'Falha geral: {type(exc).__name__}: {exc}; planilha de saída não confirmada')
-    resumo = [f'Período de registro: {(hoje-timedelta(days=6)).strftime("%d/%m/%Y")} a {hoje.strftime("%d/%m/%Y")} (sete dias inclusivos)',
+    resumo = [f'Período de registro: {(inicio or hoje-timedelta(days=6)).strftime("%d/%m/%Y")} a {hoje.strftime("%d/%m/%Y")} (datas inclusivas)',
               ('Modo online: documentos obtidos automaticamente na fonte oficial; verificar log e conferir a cópia do controle.' if modo == 'online' else 'Modo assistido: PDFs fornecidos pelo usuário; autenticidade e completude da busca exigem conferência humana.'),
               'Resultado: ' + ('COM PENDÊNCIAS' if erro else 'PROCESSAMENTO CONCLUÍDO'), f'Novos instrumentos: {len(novos)}']
     resumo.extend(f'{d["Registro"]} | {d["Tipo"]} | registro em {d["Data de registro"]} | {d["Fonte"]}' for d in novos)
@@ -195,6 +196,7 @@ def main():
     p.add_argument('--saida', type=Path, help='Assistido: pasta nova; online: raiz das pastas de execução')
     p.add_argument('--hoje', type=date.fromisoformat, help='Somente modo assistido: AAAA-MM-DD; padrão: data local')
     p.add_argument('--consultar', action='store_true', help='Consulta online automática com navegador, sem PDFs ou manifesto do usuário')
+    p.add_argument('--ano', type=int, help='Online: todos os registros do ano indicado, até a data atual')
     args = p.parse_args()
     if not args.consultar and not args.manifesto:
         p.error('Informe --manifesto ou --consultar')
@@ -204,10 +206,12 @@ def main():
         p.error('--hoje é exclusivo do modo assistido; a consulta online usa a data atual de Alagoas')
     if args.consultar:
         from consulta_online import executar_online
-        resultado = executar_online(args.controle, args.saida or Path('saidas'), args.aba, print)
+        resultado = executar_online(args.controle, args.saida or Path('saidas'), args.aba, print, ano=args.ano)
         print(resultado['resumo'])
         print('Resultados:', resultado['pasta'].resolve())
         return resultado['codigo']
+    if args.ano is not None:
+        p.error('--ano requer --consultar')
     saida = args.saida or Path('saidas') / (datetime.now().strftime('%Y%m%d_%H%M%S')+'_'+uuid.uuid4().hex[:8])
     try:
         code = executar(args.manifesto, args.controle, saida, args.hoje or date.today(), args.aba)

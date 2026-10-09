@@ -1,5 +1,5 @@
 """Coleta pela navegação pública normal do Mediador, sem contornar proteções."""
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 import hashlib
 import json
 from pathlib import Path
@@ -28,6 +28,14 @@ def hoje_alagoas():
     return datetime.now(ZoneInfo('America/Maceio')).date()
 
 
+def periodo_consulta(hoje, ano=None):
+    if ano is None:
+        return hoje-timedelta(days=6), hoje
+    if not 1900 <= ano <= hoje.year:
+        raise ValueError('Informe um ano já iniciado, entre 1900 e o ano atual')
+    return date(ano, 1, 1), min(hoje, date(ano, 12, 31))
+
+
 def paginacao(texto):
     n = monitor.normalizar(texto)
     m = re.search(r'RESULTADO:\s*(\d+)\s+INSTRUMENTO\(S\).*?PAGINA\s+(\d+)\s+DE\s+(\d+)', n, re.S)
@@ -42,10 +50,10 @@ def paginacao(texto):
     raise ConsultaIncompleta('Formato do resultado não reconhecido; não é possível confirmar a paginação')
 
 
-def preparar_filtros(page, hoje, tipo):
+def preparar_filtros(page, hoje, tipo, inicio=None):
     page.locator('#cboTPRequerimento').select_option(tipo)
     page.locator('#chkPeriodoRegistro').check()
-    page.locator('#txtDTInicioRegistro').fill((hoje-timedelta(days=6)).strftime('%d/%m/%Y'))
+    page.locator('#txtDTInicioRegistro').fill((inicio or hoje-timedelta(days=6)).strftime('%d/%m/%Y'))
     page.locator('#txtDTFimRegistro').fill(hoje.strftime('%d/%m/%Y'))
     page.locator('#cboSTVigencia').select_option('2')
     page.locator('#cboUFRegistro').select_option('')
@@ -78,12 +86,15 @@ def pesquisar(page):
     return paginacao(page.locator('#divConsultaDetalhada h2').inner_text())
 
 
-def salvar_instrumento(page, row, pasta, hoje, eventos):
+def salvar_instrumento(page, row, pasta, hoje, eventos, inicio=None):
     regs = re.findall(r'\b' + monitor.REGEX_REGISTRO + r'\b', row.inner_text())
-    if len(set(regs)) != 1:
-        raise ConsultaIncompleta('Registro ambíguo na linha do resultado')
-    reg = monitor.registro(regs[0])
-    stem = reg.replace('/', '_')
+    # A linha pode mencionar instrumentos anteriores. O cabeçalho do documento
+    # oficial é a referência para identificar o registro consultado.
+    reg = monitor.registro(regs[0]) if len(set(regs)) == 1 else None
+    identidade = row.get_attribute('indice') or ''
+    if not re.fullmatch(r'MR\d{6}/\d{4}', identidade):
+        raise ConsultaIncompleta('Solicitação oficial não reconhecida')
+    stem = (reg or identidade).replace('/', '_')
     link = row.locator('a').filter(has_text='Visualizar Instrumento Coletivo')
     if link.count() != 1:
         raise ConsultaIncompleta(f'{reg}: link de visualização não reconhecido')
@@ -93,6 +104,7 @@ def salvar_instrumento(page, row, pasta, hoje, eventos):
     original = None
     botao_download = row.locator('a').filter(has_text='Download')
     if botao_download.count() == 1:
+        paginas_anteriores = set(page.context.pages)
         try:
             with page.expect_download(timeout=30000) as espera:
                 botao_download.click()
@@ -110,6 +122,10 @@ def salvar_instrumento(page, row, pasta, hoje, eventos):
         except Exception as exc:
             eventos.append(f'{reg}: download indisponível ({type(exc).__name__}); tentando visualização oficial')
             original = None
+        finally:
+            for auxiliar in page.context.pages:
+                if auxiliar not in paginas_anteriores and not auxiliar.is_closed():
+                    auxiliar.close()
     # A visualização gera token de segurança e POST por meio do código do portal.
     with page.expect_popup(timeout=30000) as popup:
         link.click()
@@ -117,25 +133,27 @@ def salvar_instrumento(page, row, pasta, hoje, eventos):
     try:
         doc.wait_for_function("document.body && document.body.innerText.toUpperCase().includes('NÚMERO DE REGISTRO NO MTE')", timeout=30000)
         original_texto = doc.locator('body').inner_text()
-        dados = monitor.extrair(original_texto, hoje)
-        if dados['Registro'] != reg:
+        dados = monitor.extrair(original_texto, hoje, inicio)
+        if reg is not None and dados['Registro'] != reg:
             raise ConsultaIncompleta('Registro da visualização diverge do resultado de pesquisa')
+        reg = dados['Registro']
         if original is not None and original.suffix == '.pdf':
             pdf = original
         else:
             pdf = pasta / (stem+'_impressao.pdf')
             doc.pdf(path=str(pdf), format='A4', print_background=True)
             eventos.append(f'{reg}: PDF de impressão gerado da visualização oficial; não é PDF original oferecido pelo portal')
-        campos_pdf = monitor.extrair(monitor.ler_pdf(pdf), hoje)
+        campos_pdf = monitor.extrair(monitor.ler_pdf(pdf), hoje, inicio)
         if any(campos_pdf[c] != dados[c] for c in ['Registro', 'Data de registro', 'Tipo']):
             raise ConsultaIncompleta('Campos do PDF divergem do documento visualizado')
-        return {'registro': reg, 'arquivo': 'documentos/'+pdf.name, 'fonte': fonte}
+        return {'registro': reg, 'arquivo': 'documentos/'+pdf.name, 'fonte': fonte, 'campos': campos_pdf}
     finally:
         doc.close()
 
 
-def coletar(browser, pasta, hoje, eventos, progresso):
+def coletar(browser, pasta, hoje, eventos, progresso, inicio=None, catalogo=None):
     instrumentos, pendencias, totais = [], [], {}
+    catalogo = catalogo if catalogo is not None else []
     for tipo in TIPOS:
         progresso('Pesquisando '+('convenções' if tipo == 'convencao' else 'aditivos de convenções')+' no Mediador…')
         # Sessões independentes impedem que a abrangência/session de uma pesquisa contamine a outra.
@@ -149,7 +167,7 @@ def coletar(browser, pasta, hoje, eventos, progresso):
                 raise ConsultaIncompleta('Página de consulta não disponível: HTTP '+str(resposta.status if resposta else 'sem resposta'))
             if page.locator('input[type="password"]').count():
                 raise ConsultaIncompleta('Autenticação exigida; acesso automático interrompido')
-            preparar_filtros(page, hoje, tipo)
+            preparar_filtros(page, hoje, tipo, inicio)
             total, atual, paginas = pesquisar(page)
             eventos.append(f'{tipo}: resultado oficial {total} instrumento(s), {paginas} página(s)')
             vistos = set()
@@ -165,13 +183,21 @@ def coletar(browser, pasta, hoje, eventos, progresso):
                     if not identidade or identidade in vistos:
                         raise ConsultaIncompleta('Identificador de instrumento ausente/repetido na paginação')
                     vistos.add(identidade)
+                    entrada = {'Solicitação': identidade, 'Pesquisa': tipo, 'Status': 'Documento não confirmado'}
+                    regs = re.findall(r'\b' + monitor.REGEX_REGISTRO + r'\b', row.inner_text())
+                    if len(set(regs)) == 1:
+                        entrada['Registro'] = regs[0]
+                    catalogo.append(entrada)
                     try:
-                        item = salvar_instrumento(page, row, pasta, hoje, eventos)
+                        item = salvar_instrumento(page, row, pasta, hoje, eventos, inicio)
                         instrumentos.append(item)
+                        entrada.update(item['campos'])
+                        entrada.update({'Documento': item['arquivo'], 'Fonte': item['fonte'], 'Status': 'Documento lido e validado'})
                         progresso('Documento lido: '+item['registro'])
                     except Exception as exc:
                         motivo = str(exc) if isinstance(exc, (ConsultaIncompleta, ValueError)) else type(exc).__name__
                         eventos.append(f'{identidade}: documento indisponível ou rejeitado: {motivo}')
+                        entrada['Status'] = motivo
                         # Exclusões documentadas não são uma falha na coleta.
                         if not motivo.startswith('Excluído:'):
                             pendencias.append(tipo+': '+identidade+': '+motivo)
@@ -203,14 +229,69 @@ def coletar(browser, pasta, hoje, eventos, progresso):
     return instrumentos, pendencias, totais
 
 
-def executar_online(controle=None, raiz=Path('saidas'), aba=None, progresso=lambda mensagem: None):
+def gerar_relatorio(catalogo, instrumentos, pasta, resultado, inicio, fim, completo):
+    """Lista todos os documentos da consulta, inclusive os já presentes no controle."""
+    from openpyxl import Workbook
+    import csv
+    # Inclui resultados de coletores compatíveis que não preencheram o catálogo.
+    identificados = {e.get('Registro') for e in catalogo}
+    for item in instrumentos:
+        if item['registro'] not in identificados:
+            dados = monitor.extrair(monitor.ler_pdf(pasta/item['arquivo']), fim, inicio)
+            catalogo.append({**dados, 'Documento': item['arquivo'], 'Fonte': item['fonte'], 'Status': 'Documento lido e validado'})
+            identificados.add(item['registro'])
+    colunas = monitor.COLUNAS + ['Status', 'Pesquisa', 'Solicitação']
+    validos, pendentes = [], []
+    for entrada in catalogo:
+        if entrada.get('Status', '').startswith('Excluído:'):
+            continue
+        if entrada.get('Documento'):
+            entrada['SHA256'] = hashlib.sha256((pasta/entrada['Documento']).read_bytes()).hexdigest()
+        if entrada.get('Status') == 'Documento lido e validado':
+            validos.append(entrada)
+        else:
+            pendentes.append(entrada)
+    validos.sort(key=lambda d: (datetime.strptime(d['Data de registro'], '%d/%m/%Y'), d['Registro']))
+    wb = Workbook(); ws = wb.active; ws.title = 'Instrumentos'
+    pend = wb.create_sheet('Pendências')
+    for aba, linhas in [(ws, validos), (pend, pendentes)]:
+        aba.append(colunas)
+        for item in linhas:
+            aba.append([("'"+str(item[c]) if str(item.get(c, '')).startswith(('=', '+', '-', '@')) else item.get(c)) for c in colunas])
+        aba.freeze_panes = 'A2'; aba.auto_filter.ref = aba.dimensions
+    estado = wb.create_sheet('Consulta')
+    estado.append(['Informação', 'Valor'])
+    estado.append(['Data inicial de registro', inicio.strftime('%d/%m/%Y')])
+    estado.append(['Data final de registro', fim.strftime('%d/%m/%Y')])
+    estado.append(['Resultado', 'Consulta completa' if completo else 'COM PENDÊNCIAS — lista não confirmada como completa'])
+    estado.append(['Documentos validados', len(validos)])
+    estado.append(['Documentos pendentes', len(pendentes)])
+    if not completo:
+        wb.active = wb.sheetnames.index('Consulta')
+    wb.save(resultado/'instrumentos_consultados_AL.xlsx')
+    with (resultado/'instrumentos_consultados_AL.csv').open('w', encoding='utf-8-sig', newline='') as file:
+        writer = csv.writer(file, delimiter=';'); writer.writerow(colunas)
+        for item in validos+pendentes:
+            writer.writerow([("'"+str(item[c]) if str(item.get(c, '')).startswith(('=', '+', '-', '@')) else item.get(c, '')) for c in colunas])
+    texto = [f'Registros de {inicio.strftime("%d/%m/%Y")} a {fim.strftime("%d/%m/%Y")} — abrangência em Alagoas',
+             'Consulta completa' if completo else 'CONSULTA COM PENDÊNCIAS — não afirmar que a lista está completa',
+             f'Documentos lidos e validados: {len(validos)} | pendências de documentos: {len(pendentes)}',
+             'Esta lista inclui os registros já existentes no controle.']
+    texto.extend(f'{d["Registro"]} | {d["Tipo"]} | registro em {d["Data de registro"]} | {d["Fonte"]}' for d in validos)
+    texto.extend(f'PENDENTE: {d.get("Registro", d.get("Solicitação", "sem identificador"))} | {d["Status"]}' for d in pendentes)
+    (resultado/'instrumentos_consultados_AL.txt').write_text('\n'.join(texto)+'\n', encoding='utf-8')
+
+
+def executar_online(controle=None, raiz=Path('saidas'), aba=None, progresso=lambda mensagem: None, ano=None):
     hoje = hoje_alagoas()
+    inicio, fim = periodo_consulta(hoje, ano)
     pasta = raiz / ('online_'+datetime.now().strftime('%Y%m%d_%H%M%S')+'_'+uuid.uuid4().hex[:8])
     pasta.mkdir(parents=True, exist_ok=False)
     docs = pasta/'documentos'; docs.mkdir()
     eventos = [f'Consulta iniciada em {datetime.now().isoformat(timespec="seconds")}',
-               f'Período de registro: {hoje-timedelta(days=6)} a {hoje}, fuso America/Maceio; somente CCT/aditivo de CCT; abrangência AL']
+               f'Período de registro: {inicio} a {fim}, fuso America/Maceio; somente CCT/aditivo de CCT; abrangência AL']
     instrumentos, pendencias, totais = [], [], {}
+    catalogo = []
     try:
         # Valida o controle antes de consultar; entrada é apenas lida.
         monitor.abrir_controle(controle, aba)
@@ -223,7 +304,7 @@ def executar_online(controle=None, raiz=Path('saidas'), aba=None, progresso=lamb
                 options['executable_path'] = executavel
             browser = p.chromium.launch(**options)
             try:
-                instrumentos, pendencias, totais = coletar(browser, docs, hoje, eventos, progresso)
+                instrumentos, pendencias, totais = coletar(browser, docs, fim, eventos, progresso, inicio=inicio, catalogo=catalogo)
             finally:
                 browser.close()
     except Exception as exc:
@@ -234,15 +315,18 @@ def executar_online(controle=None, raiz=Path('saidas'), aba=None, progresso=lamb
     manifesto = pasta/'coleta_automatica.json'
     manifesto.write_text(json.dumps({'consulta_completa': completo, 'instrumentos': instrumentos}, ensure_ascii=False, indent=2), encoding='utf-8')
     resultado = pasta/'resultado'
-    code = monitor.executar(manifesto, controle, resultado, hoje, aba, modo='online')
+    code = monitor.executar(manifesto, controle, resultado, fim, aba, modo='online', inicio=inicio)
     eventos.extend('PENDÊNCIA: '+p for p in pendencias)
     log = resultado/'log_convencoes_AL.txt'
     log.write_text('\n'.join(eventos)+'\n'+log.read_text(encoding='utf-8'), encoding='utf-8')
     resumo = resultado/'resumo_convencoes_AL.txt'
     resumo.write_text(resumo.read_text(encoding='utf-8')+'Totais oficiais por tipo: '+str(totais)+'\n'+
                      ('Pendências: '+'; '.join(pendencias)+'\n' if pendencias else ''), encoding='utf-8')
+    gerar_relatorio(catalogo, instrumentos, pasta, resultado, inicio, fim, completo and code == 0)
+    resumo.write_text(resumo.read_text(encoding='utf-8')+f'Instrumentos listados nesta consulta (inclusive já existentes): {len(catalogo)}\nRelatório completo: instrumentos_consultados_AL.xlsx e instrumentos_consultados_AL.txt\n', encoding='utf-8')
     return {'codigo': code, 'pasta': resultado, 'controle': resultado/'controle_convencoes_AL.xlsx',
-            'completa': completo and code == 0, 'resumo': resumo.read_text(encoding='utf-8')}
+            'completa': completo and code == 0, 'resumo': resumo.read_text(encoding='utf-8'),
+            'relatorio': (resultado/'instrumentos_consultados_AL.txt').read_text(encoding='utf-8')}
 
 
 if __name__ == '__main__':
@@ -250,7 +334,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--controle', type=Path)
     parser.add_argument('--aba')
+    parser.add_argument('--ano', type=int)
     args = parser.parse_args()
-    resultado = executar_online(args.controle, aba=args.aba, progresso=print)
+    resultado = executar_online(args.controle, aba=args.aba, progresso=print, ano=args.ano)
     print(resultado['resumo']); print('Resultados:', resultado['pasta'].resolve())
     raise SystemExit(resultado['codigo'])
