@@ -1,28 +1,9 @@
-# Agente Codex — Cercont
+# Monitor Diário de Convenções e Aditivos — Alagoas
 
-Este pacote contém uma configuração inicial para orientar o Codex em um projeto local.
+Ferramenta Python para o Departamento Pessoal da Cercont. A interface permite clicar em **Consultar novidades** para pesquisar o Mediador, obter documentos e atualizar uma nova cópia do controle, sem anexos ou arquivo de resultados preparado pelo usuário.
 
-## Arquivos
+Prepare o ambiente conforme [GUIA_MONITOR.md](GUIA_MONITOR.md) e abra `abrir_monitor.bat` no Windows. Não há agendamento automático.
 
-- `AGENTS.md`: instruções permanentes do agente para este projeto.
-- `.gitignore`: evita adicionar alguns arquivos locais e segredos ao Git.
+O acesso online foi testado com a CCT real AL000242/2026. A pesquisa de aditivos retornou HTTP 500, registrado como pendência; a consulta completa dos dois tipos ainda não foi validada. Consulte o [diagnóstico técnico](DIAGNOSTICO_MEDIADOR.md).
 
-## Como começar
-
-1. Crie uma pasta para o projeto da Cercont. Não use como pasta inicial a raiz inteira do computador nem uma pasta que contenha documentos confidenciais sem necessidade.
-2. Extraia estes arquivos para a pasta do projeto.
-3. Abra o Codex e selecione/abra essa pasta como projeto.
-4. Peça ao Codex: "Leia o AGENTS.md e examine a estrutura deste projeto sem alterar nada. Explique o que encontrou e sugira um primeiro projeto pequeno."
-5. Confira a proposta antes de iniciar mudanças maiores.
-
-## Primeiro teste recomendado
-
-Peça ao Codex para criar uma pequena aplicação de demonstração com dados fictícios, adicionar instruções de execução e executar os testes disponíveis. Não use dados reais de clientes ou funcionários no primeiro teste.
-
-## Segurança
-
-O `AGENTS.md` orienta o comportamento do agente, mas não é uma barreira técnica de segurança. Use os controles de permissões e confirmações do Codex e não conceda acesso a pastas desnecessárias. Não coloque senhas, tokens, chaves de API ou dados confidenciais no repositório.
-
-## Observação
-
-Este pacote não instala o Codex nem configura permissões do computador. Ele fornece instruções para o projeto.
+A [alternativa assistida](GUIA_ASSISTIDO.md) permanece disponível. As regras de trabalho e proteção de dados estão em [AGENTS.md](AGENTS.md).

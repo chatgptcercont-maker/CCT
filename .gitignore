@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+entrada/
+saidas/
+*.xlsx
+*.pdf
+
+configuracao_monitor.json
+config_monitor_*.tmp
