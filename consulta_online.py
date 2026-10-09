@@ -14,6 +14,7 @@ from diagnosticar_mediador import URL, proxy_do_ambiente, classificar_erro
 import monitor
 
 TIPOS = ('convencao', 'termoAditivoConvecao')
+PESQUISAS = tuple((tipo, area) for tipo in TIPOS for area in ('estado', 'municipios'))
 
 
 class ConsultaIncompleta(RuntimeError):
@@ -63,7 +64,7 @@ def paginacao(texto):
     raise ConsultaIncompleta('Formato do resultado não reconhecido; não é possível confirmar a paginação')
 
 
-def preparar_filtros(page, hoje, tipo, inicio=None):
+def preparar_filtros(page, hoje, tipo, inicio=None, area='estado'):
     page.locator('#cboTPRequerimento').select_option(tipo)
     page.locator('#chkPeriodoRegistro').check()
     page.locator('#txtDTInicioRegistro').fill((inicio or hoje-timedelta(days=6)).strftime('%d/%m/%Y'))
@@ -71,12 +72,47 @@ def preparar_filtros(page, hoje, tipo, inicio=None):
     page.locator('#cboSTVigencia').select_option('2')
     page.locator('#cboUFRegistro').select_option('')
     for campo in ['chkMunicipal', 'chkIntermunicipal', 'chkEstadual', 'chkInterestadual', 'chkNacional']:
-        page.locator('#'+campo).check()
+        checkbox = page.locator('#'+campo)
+        if not checkbox.is_checked():
+            # Cada alteração dispara uma limpeza assíncrona da seleção territorial.
+            # Aguarda essa limpeza antes de adicionar UF ou municípios.
+            with page.expect_response(lambda r: '/getPartAbrangenciaRemoverTodos' in r.url, timeout=30000) as limpeza:
+                checkbox.check()
+            if limpeza.value.status != 200:
+                raise ConsultaIncompleta(f'Limpeza do filtro territorial respondeu HTTP {limpeza.value.status}')
     page.locator('#cboUFAbrangenciaTerritorial').select_option('AL')
+    if area == 'municipios':
+        selecionar_municipios_al(page)
+        return
+    if area != 'estado':
+        raise ValueError('Área de pesquisa desconhecida')
     with page.expect_response(lambda r: '/getPartAbrangenciaAddUF' in r.url, timeout=30000) as espera:
         page.locator('#btnAdicionarUF').click()
     if espera.value.status != 200:
         raise ConsultaIncompleta(f'Seleção territorial falhou: HTTP {espera.value.status}')
+
+
+def selecionar_municipios_al(page):
+    """Usa Todos disponíveis, não apenas os municípios da inicial exibida."""
+    with page.expect_response(lambda r: '/getPartMunicipiosPelaUF' in r.url, timeout=30000) as municipios:
+        page.locator('#btnSelecionarMunicipio').click()
+    if municipios.value.status != 200:
+        raise ConsultaIncompleta(f'Seletor de municípios respondeu HTTP {municipios.value.status}')
+    dialogo = page.locator('#divPopUpAbrangenciaMunicipios')
+    dialogo.wait_for(state='visible', timeout=15000)
+    if not re.search(r'\bUF:\s*AL\b', dialogo.inner_text()):
+        raise ConsultaIncompleta('O seletor de municípios não confirmou a UF AL')
+    # O clique substitui o HTML do checkbox; check() pode falhar ao conferir
+    # o elemento antigo. Aguarda as respostas nativas de seleção e gravação.
+    with page.expect_response(lambda r: '/getPartAbrangenciaGravarBufferDaUFAtiva' in r.url, timeout=30000) as gravacao:
+        with page.expect_response(lambda r: '/getPartMunicipiosUFMarcada' in r.url, timeout=30000) as selecao:
+            page.locator('#chkTodosDisponiveisAbrangencia').click()
+        if selecao.value.status != 200:
+            raise ConsultaIncompleta(f'Seleção de todos os municípios respondeu HTTP {selecao.value.status}')
+    if gravacao.value.status != 200:
+        raise ConsultaIncompleta(f'Gravação dos municípios respondeu HTTP {gravacao.value.status}')
+    page.locator('.ui-dialog').filter(has=dialogo).get_by_text('Fechar', exact=True).click()
+    dialogo.wait_for(state='hidden', timeout=15000)
 
 
 def pesquisar(page):
@@ -167,8 +203,11 @@ def salvar_instrumento(page, row, pasta, hoje, eventos, inicio=None):
 def coletar(browser, pasta, hoje, eventos, progresso, inicio=None, catalogo=None):
     instrumentos, pendencias, totais = [], [], {}
     catalogo = catalogo if catalogo is not None else []
-    for tipo in TIPOS:
-        progresso('Pesquisando '+('convenções' if tipo == 'convencao' else 'aditivos de convenções')+' no Mediador…')
+    catalogados = set()
+    for tipo, area in PESQUISAS:
+        pesquisa = tipo + ':' + area
+        progresso('Pesquisando '+('convenções' if tipo == 'convencao' else 'aditivos de convenções')+
+                  (' — estado de Alagoas' if area == 'estado' else ' — todos os municípios de Alagoas')+'…')
         # Sessões independentes impedem que a abrangência/session de uma pesquisa contamine a outra.
         context = browser.new_context(accept_downloads=True)
         context.on('response', lambda r: eventos.append(f'HTTP {r.status}: {urlsplit(r.url).path}')
@@ -184,9 +223,9 @@ def coletar(browser, pasta, hoje, eventos, progresso, inicio=None, catalogo=None
                 raise ConsultaIncompleta('Página de consulta não disponível: HTTP '+str(resposta.status if resposta else 'sem resposta'))
             if page.locator('input[type="password"]').count():
                 raise ConsultaIncompleta('Autenticação exigida; acesso automático interrompido')
-            preparar_filtros(page, hoje, tipo, inicio)
+            preparar_filtros(page, hoje, tipo, inicio, area=area)
             total, atual, paginas = pesquisar(page)
-            eventos.append(f'{tipo}: resultado oficial {total} instrumento(s), {paginas} página(s)')
+            eventos.append(f'{pesquisa}: resultado oficial {total} instrumento(s), {paginas} página(s)')
             vistos = set()
             if paginas > 200:
                 raise ConsultaIncompleta('Mais de 200 páginas; consulta interrompida sem presumir completude')
@@ -200,7 +239,11 @@ def coletar(browser, pasta, hoje, eventos, progresso, inicio=None, catalogo=None
                     if not identidade or identidade in vistos:
                         raise ConsultaIncompleta('Identificador de instrumento ausente/repetido na paginação')
                     vistos.add(identidade)
-                    entrada = {'Solicitação': identidade, 'Pesquisa': tipo, 'Status': 'Documento não confirmado'}
+                    if identidade in catalogados:
+                        eventos.append(f'{pesquisa}: {identidade} já examinado em outra pesquisa; sem duplicar')
+                        continue
+                    catalogados.add(identidade)
+                    entrada = {'Solicitação': identidade, 'Pesquisa': pesquisa, 'Status': 'Documento não confirmado'}
                     regs = re.findall(r'\b' + monitor.REGEX_REGISTRO + r'\b', row.inner_text())
                     if len(set(regs)) == 1:
                         entrada['Registro'] = regs[0]
@@ -232,13 +275,13 @@ def coletar(browser, pasta, hoje, eventos, progresso, inicio=None, catalogo=None
                         raise ConsultaIncompleta('Resultado mudou durante paginação; consultar novamente')
             if len(vistos) != total:
                 raise ConsultaIncompleta(f'Total oficial {total} difere dos {len(vistos)} registros examinados')
-            totais[tipo] = total
+            totais[pesquisa] = total
         except Exception as exc:
             motivo = str(exc) if isinstance(exc, ConsultaIncompleta) else classificar_erro(str(exc))+': '+type(exc).__name__
             if not page.is_closed() and captcha_interativo(page):
                 motivo = 'CAPTCHA interativo detectado; consulta interrompida sem resolver ou contornar o desafio'
-            pendencias.append(tipo+': '+motivo)
-            eventos.append(tipo+': '+motivo+'; sem contornar a proteção ou repetir a pesquisa')
+            pendencias.append(pesquisa+': '+motivo)
+            eventos.append(pesquisa+': '+motivo+'; sem contornar a proteção ou repetir a pesquisa')
             if any(s in motivo for s in ['HTTP 401', 'HTTP 403', 'CAPTCHA interativo', 'Autenticação exigida', 'BLOQUEIO_DO_TUNEL_PROXY', 'ERRO_TLS']):
                 break
         finally:
@@ -309,7 +352,7 @@ def executar_online(controle=None, raiz=Path('saidas'), aba=None, progresso=lamb
     pasta.mkdir(parents=True, exist_ok=False)
     docs = pasta/'documentos'; docs.mkdir()
     eventos = [f'Consulta iniciada em {datetime.now().isoformat(timespec="seconds")}',
-               f'Período de registro: {inicio} a {fim}, fuso America/Maceio; somente CCT/aditivo de CCT; abrangência AL']
+               f'Período de registro: {inicio} a {fim}, fuso America/Maceio; somente CCT/aditivo de CCT; UF AL e todos os municípios de AL em pesquisas separadas']
     instrumentos, pendencias, totais = [], [], {}
     catalogo = []
     try:
@@ -336,7 +379,7 @@ def executar_online(controle=None, raiz=Path('saidas'), aba=None, progresso=lamb
     except Exception as exc:
         motivo = str(exc) if isinstance(exc, ValueError) else classificar_erro(str(exc))+': '+type(exc).__name__
         pendencias.append(motivo); eventos.append(motivo)
-    completo = not pendencias and len(totais) == len(TIPOS)
+    completo = not pendencias and len(totais) == len(PESQUISAS)
     # Manifesto de auditoria gerado internamente; não é preparado pelo usuário.
     manifesto = pasta/'coleta_automatica.json'
     manifesto.write_text(json.dumps({'consulta_completa': completo, 'instrumentos': instrumentos}, ensure_ascii=False, indent=2), encoding='utf-8')
@@ -346,7 +389,7 @@ def executar_online(controle=None, raiz=Path('saidas'), aba=None, progresso=lamb
     log = resultado/'log_convencoes_AL.txt'
     log.write_text('\n'.join(eventos)+'\n'+log.read_text(encoding='utf-8'), encoding='utf-8')
     resumo = resultado/'resumo_convencoes_AL.txt'
-    resumo.write_text(resumo.read_text(encoding='utf-8')+'Totais oficiais por tipo: '+str(totais)+'\n'+
+    resumo.write_text(resumo.read_text(encoding='utf-8')+'Totais oficiais por pesquisa (podem se sobrepor; não somar): '+str(totais)+'\n'+
                      ('Pendências: '+'; '.join(pendencias)+'\n' if pendencias else ''), encoding='utf-8')
     gerar_relatorio(catalogo, instrumentos, pasta, resultado, inicio, fim, completo and code == 0, pendencias)
     resumo.write_text(resumo.read_text(encoding='utf-8')+f'Instrumentos listados nesta consulta (inclusive já existentes): {len(catalogo)}\nRelatório completo: instrumentos_consultados_AL.xlsx e instrumentos_consultados_AL.txt\n', encoding='utf-8')

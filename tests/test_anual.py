@@ -55,7 +55,7 @@ class AnualTests(unittest.TestCase):
             def coletar(browser,docs,hoje,eventos,progresso,inicio=None,catalogo=None):
                 self.assertEqual(inicio,date(2026,1,1))
                 pdf_ficticio(docs/'janeiro.pdf',documento(data='01/01/2026'))
-                return [{'registro':'AL000001/2026','arquivo':'documentos/janeiro.pdf','fonte':online.URL}],[],{'convencao':1,'termoAditivoConvecao':0}
+                return [{'registro':'AL000001/2026','arquivo':'documentos/janeiro.pdf','fonte':online.URL}],[],{tipo+':'+area: (1 if tipo=='convencao' else 0) for tipo,area in online.PESQUISAS}
             with patch.object(online,'hoje_alagoas',return_value=self.hoje),patch.object(online,'coletar',side_effect=coletar),patch('playwright.sync_api.sync_playwright'):
                 r=online.executar_online(p/'original.xlsx',p/'saidas',ano=2026)
             self.assertTrue(r['completa']);self.assertEqual(antes,(p/'original.xlsx').read_bytes())

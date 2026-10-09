@@ -55,10 +55,10 @@ class OnlineTests(unittest.TestCase):
         browser=MagicMock()
         context=browser.new_context.return_value;page=context.new_page.return_value
         page.goto.return_value.status=200;page.locator.return_value.count.return_value=0
-        with tempfile.TemporaryDirectory() as tmp,patch.object(online,'preparar_filtros'),patch.object(online,'pesquisar',side_effect=[(0,1,1),online.ConsultaIncompleta('Pesquisa oficial respondeu HTTP 500')]):
+        with tempfile.TemporaryDirectory() as tmp,patch.object(online,'preparar_filtros'),patch.object(online,'pesquisar',side_effect=[(0,1,1),online.ConsultaIncompleta('Pesquisa oficial respondeu HTTP 500'),(0,1,1),(0,1,1)]):
             items,pendencias,totais=online.coletar(browser,Path(tmp),date(2026,10,8),[],lambda m:None)
-        self.assertEqual(items,[]);self.assertIn('HTTP 500',pendencias[0]);self.assertEqual(totais,{'convencao':0})
-        self.assertEqual(context.close.call_count,2)
+        self.assertEqual(items,[]);self.assertIn('HTTP 500',pendencias[0]);self.assertEqual(totais,{'convencao:estado':0,'termoAditivoConvecao:estado':0,'termoAditivoConvecao:municipios':0})
+        self.assertEqual(context.close.call_count,4)
 
     def test_403_nao_tenta_outro_contexto_para_contornar(self):
         browser=MagicMock();page=browser.new_context.return_value.new_page.return_value
@@ -75,7 +75,7 @@ class OnlineTests(unittest.TestCase):
             controle=p/'original.xlsx';wb.save(controle);original=controle.read_bytes()
             def coleta(browser,docs,hoje,eventos,progresso,inicio=None,catalogo=None):
                 pdf_ficticio(docs/'novo.pdf',documento())
-                return [{'registro':'AL000001/2026','arquivo':'documentos/novo.pdf','fonte':online.URL}],[],{'convencao':1,'termoAditivoConvecao':0}
+                return [{'registro':'AL000001/2026','arquivo':'documentos/novo.pdf','fonte':online.URL}],[],{tipo+':'+area: (1 if tipo=='convencao' else 0) for tipo,area in online.PESQUISAS}
             with patch.object(online,'coletar',side_effect=coleta),patch.object(online,'hoje_alagoas',return_value=date(2026,10,8)),patch('playwright.sync_api.sync_playwright'):
                 r=online.executar_online(controle,p/'saidas')
                 self.assertTrue(r['completa']);self.assertEqual(r['codigo'],0)

@@ -99,3 +99,11 @@ Os documentos e resultados locais estão ignorados pelo Git. Nenhuma planilha of
 A suíte de testes com dados fictícios valida falhas, filtros, deduplicação, controle preservado, registros da SRT e ligação do botão ao backend. Esses testes complementam, mas não substituem, as requisições e os documentos reais descritos acima. A interface gráfica não foi executada em Windows; instruções de instalação e abertura estão em `GUIA_MONITOR.md`.
 
 A ferramenta `diagnosticar_mediador.py` permanece disponível para inspeção técnica. Ela não é o fluxo principal. O guia do modo assistido é `GUIA_ASSISTIDO.md`.
+
+## Ampliação para todos os municípios de Alagoas
+
+O usuário apontou AL000030/2026 como instrumento ausente. A configuração anterior adicionava somente a UF AL; os 24 documentos anteriores não comprovam completude para instrumentos municipais. O portal possui os controles nativos `btnSelecionarMunicipio`, `chkTodosDisponiveisAbrangencia` e `chkTodosMunicipiosDestaInicial`. O primeiro seletor retornou HTTP 200 sem UF previamente adicionada, exibindo UF AL; quando a UF já estava adicionada, houve HTTP 500. Portanto, a busca corrigida faz quatro pesquisas com sessões independentes: cada tipo por UF e por todos os municípios.
+
+Os scripts oficiais usam `getPartMunicipiosUFMarcada` para Todos disponíveis e `getPartAbrangenciaGravarBufferDaUFAtiva` para gravar a seleção. O coletor aguarda ambas as respostas antes de pesquisar. Usa clique nativo porque o checkbox é substituído durante a atualização do HTML. Também aguarda a limpeza territorial disparada pelos checkboxes de tipos, evitando adicionar a seleção enquanto uma limpeza ainda está em andamento. Nenhuma requisição de consulta ou token é fabricado.
+
+Os 37 testes locais passaram. As tentativas de concluir a pesquisa municipal no navegador foram interrompidas; AL000030/2026 e a completude real da busca ampliada permanecem sem validação. Não se deve apresentar os testes fictícios nem os 24 documentos da pesquisa anterior como comprovação dessa ampliação.

@@ -35,7 +35,7 @@ O programa guarda a seleção localmente. Após cada execução com uma planilha
 
 Fonte: `https://mediador.trabalho.gov.br/sistemas/mediador/ConsultarInstColetivo`.
 
-O navegador preenche os filtros e aciona o botão **Pesquisar** do próprio portal. São feitas duas pesquisas: Convenção Coletiva e Termo Aditivo de Convenção Coletiva. Acordos e aditivos de acordos não são selecionados e são recusados também na leitura dos documentos.
+O navegador preenche os filtros e aciona o botão **Pesquisar** do próprio portal. São feitas quatro pesquisas: CCT por UF AL, CCT por todos os municípios de AL, aditivo de CCT por UF AL e aditivo de CCT por todos os municípios de AL. Acordos e aditivos de acordos não são selecionados e são recusados também na leitura dos documentos.
 
 O campo **Período de registro** permite escolher:
 
@@ -45,7 +45,7 @@ O campo **Período de registro** permite escolher:
 A seleção é pela **data de registro**, não pela vigência nem apenas pelo ano impresso no número do instrumento. O período é recalculado a cada clique usando o fuso `America/Maceio`. O modo online não permite substituir a data atual por uma data fictícia.
 
 
-A seleção territorial usa **Alagoas**, separada da UF de registro, e contempla os tipos de abrangência municipal, intermunicipal, estadual, interestadual e nacional. A presença de Alagoas é conferida novamente na cláusula do documento. Um registro de outra UF ou da SRT pode ser aceito se a cláusula confirmar abrangência em AL. A aplicação da convenção a cada cliente precisa de revisão do Departamento Pessoal.
+A seleção territorial usa **Alagoas**, separada da UF de registro, e contempla os tipos de abrangência municipal, intermunicipal, estadual, interestadual e nacional. A pesquisa municipal aciona **Selecionar Município → Todos disponíveis** da UF AL; não usa apenas os municípios da inicial exibida. Não é necessário que o documento cubra o estado inteiro: qualquer município com abrangência confirmada em AL é aceito. As quatro pesquisas têm sessões separadas, e instrumentos repetidos são reunidos uma única vez. As contagens por pesquisa podem se sobrepor e não devem ser somadas. A presença de Alagoas é conferida novamente na cláusula do documento. Um registro de outra UF ou da SRT pode ser aceito se a cláusula confirmar abrangência em AL. A aplicação da convenção a cada cliente precisa de revisão do Departamento Pessoal.
 
 A coleta acompanha a contagem de instrumentos e páginas informada pelo portal e tenta avançar pelos controles nativos de paginação. Controles desconhecidos, mudanças de contagem, duplicação de páginas ou mais de 200 páginas tornam a consulta incompleta, sem presumir ausência de registros.
 
@@ -93,7 +93,7 @@ A interface distingue consulta concluída de consulta com pendências. Na linha 
 .venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-Foram executados **32 testes com dados fictícios**, abrangendo períodos anual e semanal, rejeição de ACTs, número de registro versus número de solicitação, registros da SRT com cinco ou seis dígitos, preservação do controle, retorno anual de registros já existentes, repetição sem duplicatas, classificação de falhas, retorno HTTP 500 e conexão do botão com a coleta online. Os testes fictícios não comprovam acesso à fonte oficial.
+Foram executados **37 testes com dados fictícios**, abrangendo períodos anual e semanal, rejeição de ACTs, número de registro versus número de solicitação, registros da SRT com cinco ou seis dígitos, preservação do controle, retorno anual de registros já existentes, repetição sem duplicatas, classificação de falhas, retorno HTTP 500 e conexão do botão com a coleta online. Os testes fictícios não comprovam acesso à fonte oficial.
 
 Também foi executado um teste real pela internet: CCT **AL000242/2026**, registrada em **07/10/2026**, com abrangência confirmada em AL. O programa baixou o original `.doc`, acessou a visualização oficial, gerou um PDF de impressão e acrescentou uma linha à planilha de teste. Uma segunda execução online com essa planilha acrescentou **zero linhas**, sem duplicar o registro. Na pesquisa de aditivos, o erro HTTP 500 foi registrado nas duas execuções.
 
@@ -114,3 +114,7 @@ A mesma consulta online pode ser executada sem a janela:
 Use `--ano 2026` para a consulta anual; sem `--ano`, a linha de comando mantém a consulta dos últimos sete dias. Sem `--controle`, cria um modelo novo. Com várias abas, use `--aba "Nome da aba"`. `--saida` seleciona a raiz das pastas de execução; cada execução cria uma pasta nova dentro dela.
 
 A versão assistida foi preservada como alternativa em **`GUIA_ASSISTIDO.md`**, com o comando `--manifesto`. Ela não é o fluxo principal. `diagnosticar_mediador.py` continua disponível para investigação técnica. O diagnóstico da rede e os detalhes da fonte estão em `DIAGNOSTICO_MEDIADOR.md`.
+
+## Validação do ajuste para todos os municípios
+
+O HTML e os scripts oficiais confirmaram controles distintos para adicionar a UF, selecionar todos os municípios disponíveis e selecionar apenas os municípios da inicial exibida. O seletor de municípios foi aberto na fonte oficial e confirmou UF AL. O teste completo do botão Todos disponíveis e da pesquisa municipal foi interrompido; a presença de **AL000030/2026** ainda não foi confirmada na consulta corrigida. Os 37 testes locais validam o fluxo, a união das quatro pesquisas sem duplicação e documentos fictícios municipais. A validação real anterior dos 24 documentos corresponde ao filtro antigo por UF e não comprova completude da busca ampliada. No Windows, atualize `consulta_online.py`, execute Ano de 2026 e confira esse registro no retorno completo e as pendências no log.
