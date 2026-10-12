@@ -118,3 +118,7 @@ A versão assistida foi preservada como alternativa em **`GUIA_ASSISTIDO.md`**, 
 ## Validação do ajuste para todos os municípios
 
 O HTML e os scripts oficiais confirmaram controles distintos para adicionar a UF, selecionar todos os municípios disponíveis e selecionar apenas os municípios da inicial exibida. O seletor de municípios foi aberto na fonte oficial e confirmou UF AL. O teste completo do botão Todos disponíveis e da pesquisa municipal foi interrompido; a presença de **AL000030/2026** ainda não foi confirmada na consulta corrigida. Os 37 testes locais validam o fluxo, a união das quatro pesquisas sem duplicação e documentos fictícios municipais. A validação real anterior dos 24 documentos corresponde ao filtro antigo por UF e não comprova completude da busca ampliada. No Windows, atualize `consulta_online.py`, execute Ano de 2026 e confira esse registro no retorno completo e as pendências no log.
+
+## Interface visual
+
+A janela usa cabeçalho azul-escuro, botão principal verde, filtros organizados em painel branco e área de resultados com rolagem. Pode ser redimensionada para ampliar a leitura. Não há dependências novas. Para atualizar o visual em uma instalação existente, feche o monitor e substitua somente `interface.py` pelo arquivo atualizado do repositório; abra novamente `abrir_monitor.bat`. Os 37 testes existentes passaram após a mudança. O ambiente de desenvolvimento não dispõe de tela gráfica; a aparência final, incluindo a escala de fontes do Windows, precisa ser conferida no computador do usuário.

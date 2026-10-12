@@ -35,7 +35,10 @@ class Aplicacao:
     def __init__(self, root):
         self.root = root
         self.root.title('Monitor de Convenções e Aditivos — Alagoas | Cercont')
-        self.root.geometry('880x640')
+        self.root.geometry('980x740')
+        self.root.minsize(860, 660)
+        self.root.configure(background='#eef2f6')
+        self.configurar_estilo()
         self.fila = queue.Queue()
         self.ocupado = False
         self.ultima_pasta = None
@@ -43,30 +46,72 @@ class Aplicacao:
         self.controle = tk.StringVar(value=self.config.get('controle', ''))
         self.aba = tk.StringVar(value=self.config.get('aba', ''))
         self.periodo = tk.StringVar(value=self.config.get('periodo', 'Ano de 2026'))
-        self.status = tk.StringVar(value='Pronto para consultar a fonte oficial. Não há agendamento.')
-        frame = ttk.Frame(root, padding=16); frame.pack(fill='both', expand=True)
-        ttk.Label(frame, text='Monitor Diário de Convenções e Aditivos — Alagoas', font=('Segoe UI', 15, 'bold')).pack(anchor='w')
-        ttk.Label(frame, text='CCTs e aditivos de CCT · abrangência em Alagoas').pack(anchor='w', pady=(4, 14))
-        periodo = ttk.Frame(frame); periodo.pack(fill='x', pady=4)
-        ttk.Label(periodo, text='Período de registro:').pack(side='left')
-        self.campo_periodo = ttk.Combobox(periodo, textvariable=self.periodo, values=['Ano de 2026', 'Últimos 7 dias'], state='readonly', width=24)
-        self.campo_periodo.pack(side='left', padx=8)
-        ttk.Label(frame, text='Controle existente (opcional na primeira execução; arquivo original preservado):').pack(anchor='w')
-        entrada = ttk.Frame(frame); entrada.pack(fill='x', pady=4)
-        self.campo_controle = ttk.Entry(entrada, textvariable=self.controle); self.campo_controle.pack(side='left', fill='x', expand=True)
-        self.escolher = ttk.Button(entrada, text='Escolher planilha', command=self.selecionar_controle); self.escolher.pack(side='left', padx=(8, 0))
-        aba = ttk.Frame(frame); aba.pack(fill='x', pady=4)
-        ttk.Label(aba, text='Aba (se houver mais de uma):').pack(side='left')
-        self.campo_aba = ttk.Entry(aba, textvariable=self.aba, width=30); self.campo_aba.pack(side='left', padx=8)
-        botoes = ttk.Frame(frame); botoes.pack(fill='x', pady=12)
-        self.consultar = ttk.Button(botoes, text='Consultar novidades', command=self.iniciar); self.consultar.pack(side='left')
-        self.abrir = ttk.Button(botoes, text='Abrir resultados', command=self.abrir_resultados, state='disabled'); self.abrir.pack(side='left', padx=8)
-        ttk.Label(frame, textvariable=self.status, wraplength=820).pack(anchor='w', pady=4)
-        self.progresso = ttk.Progressbar(frame, mode='indeterminate'); self.progresso.pack(fill='x', pady=6)
-        painel = ttk.Frame(frame); painel.pack(fill='both', expand=True)
-        self.texto = tk.Text(painel, wrap='word', height=20); self.texto.pack(side='left', fill='both', expand=True)
-        rolagem = ttk.Scrollbar(painel, command=self.texto.yview); rolagem.pack(side='right', fill='y')
+        self.status = tk.StringVar(value='Pronto para consultar a fonte oficial.')
+
+        cabecalho = tk.Frame(root, background='#142c46', padx=28, pady=20)
+        cabecalho.pack(fill='x')
+        tk.Label(cabecalho, text='CERCONT  /  DEPARTAMENTO PESSOAL',
+                 background='#142c46', foreground='#8edbd0',
+                 font=('Segoe UI', 10, 'bold')).pack(anchor='w')
+        tk.Label(cabecalho, text='Monitor de Convenções e Aditivos',
+                 background='#142c46', foreground='white',
+                 font=('Segoe UI', 21, 'bold')).pack(anchor='w', pady=(7, 3))
+        tk.Label(cabecalho, text='Alagoas e seus municípios  •  Fonte oficial: Sistema Mediador',
+                 background='#142c46', foreground='#c5d4e4',
+                 font=('Segoe UI', 11)).pack(anchor='w')
+
+        frame = ttk.Frame(root, padding=(24, 18, 24, 12), style='App.TFrame')
+        frame.pack(fill='both', expand=True)
+        filtros = ttk.Frame(frame, padding=18, style='Card.TFrame')
+        filtros.pack(fill='x')
+        filtros.columnconfigure(0, weight=1)
+        filtros.columnconfigure(1, weight=1)
+        ttk.Label(filtros, text='Prepare sua consulta', style='Title.TLabel').grid(
+            row=0, column=0, columnspan=2, sticky='w', pady=(0, 12))
+        ttk.Label(filtros, text='Período de registro', style='Card.TLabel').grid(row=1, column=0, sticky='w')
+        ttk.Label(filtros, text='Aba da planilha · opcional', style='Card.TLabel').grid(row=1, column=1, sticky='w', padx=(18, 0))
+        self.campo_periodo = ttk.Combobox(filtros, textvariable=self.periodo,
+            values=['Ano de 2026', 'Últimos 7 dias'], state='readonly', width=28)
+        self.campo_periodo.grid(row=2, column=0, sticky='ew', pady=(5, 12))
+        self.campo_aba = ttk.Entry(filtros, textvariable=self.aba)
+        self.campo_aba.grid(row=2, column=1, sticky='ew', padx=(18, 0), pady=(5, 12))
+        ttk.Label(filtros, text='Planilha de controle · opcional na primeira consulta',
+                  style='Card.TLabel').grid(row=3, column=0, columnspan=2, sticky='w')
+        entrada = ttk.Frame(filtros, style='Card.TFrame')
+        entrada.grid(row=4, column=0, columnspan=2, sticky='ew', pady=(5, 7))
+        self.campo_controle = ttk.Entry(entrada, textvariable=self.controle)
+        self.campo_controle.pack(side='left', fill='x', expand=True)
+        self.escolher = ttk.Button(entrada, text='Escolher planilha', command=self.selecionar_controle)
+        self.escolher.pack(side='left', padx=(10, 0))
+        ttk.Label(filtros, text='O arquivo original é preservado. Sem planilha, um novo controle será criado.',
+                  style='Muted.TLabel').grid(row=5, column=0, columnspan=2, sticky='w')
+
+        botoes = ttk.Frame(frame, style='App.TFrame')
+        botoes.pack(fill='x', pady=14)
+        self.consultar = ttk.Button(botoes, text='Consultar novidades', style='Primary.TButton', command=self.iniciar)
+        self.consultar.pack(side='left')
+        self.abrir = ttk.Button(botoes, text='Abrir resultados', command=self.abrir_resultados, state='disabled')
+        self.abrir.pack(side='left', padx=10)
+        ttk.Label(botoes, text='Execução manual · sem agendamento', style='Footer.TLabel').pack(side='right')
+
+        resultados = ttk.Frame(frame, padding=16, style='Card.TFrame')
+        resultados.pack(fill='both', expand=True)
+        ttk.Label(resultados, text='Acompanhe a consulta', style='Title.TLabel').pack(anchor='w')
+        ttk.Label(resultados, textvariable=self.status, style='Status.TLabel', wraplength=780).pack(anchor='w', pady=(6, 8))
+        self.progresso = ttk.Progressbar(resultados, mode='indeterminate', style='Query.Horizontal.TProgressbar')
+        self.progresso.pack(fill='x', pady=(0, 10))
+        painel = ttk.Frame(resultados, style='Card.TFrame')
+        painel.pack(fill='both', expand=True)
+        self.texto = tk.Text(painel, wrap='word', height=10, background='#f7f9fc', foreground='#24364b',
+                            font=('Segoe UI', 10), relief='flat', borderwidth=0,
+                            padx=14, pady=12, spacing1=3, spacing3=5,
+                            selectbackground='#c7e9e4', selectforeground='#142c46')
+        self.texto.pack(side='left', fill='both', expand=True)
+        rolagem = ttk.Scrollbar(painel, command=self.texto.yview)
+        rolagem.pack(side='right', fill='y')
         self.texto.configure(yscrollcommand=rolagem.set)
+        ttk.Label(frame, text='CCTs e termos aditivos de CCT · acordos coletivos excluídos',
+                  style='Footer.TLabel').pack(anchor='w', pady=(10, 0))
         self.mostrar('Ao clicar, o programa consulta o Mediador, obtém os documentos e gera uma nova cópia do controle.\n'
                      'Nenhum PDF ou arquivo de resultados precisa ser fornecido.\n'
                      'No Windows, uma janela do Edge será aberta e controlada pelo programa; aguarde sem fechar.\n'
@@ -74,6 +119,27 @@ class Aplicacao:
                      'Sem controle selecionado, será criado um modelo novo.\n')
         root.protocol('WM_DELETE_WINDOW', self.fechar)
         root.after(100, self.atualizar)
+
+    def configurar_estilo(self):
+        estilo = ttk.Style(self.root)
+        estilo.theme_use('clam')
+        estilo.configure('.', font=('Segoe UI', 10))
+        estilo.configure('App.TFrame', background='#eef2f6')
+        estilo.configure('Card.TFrame', background='white')
+        estilo.configure('Card.TLabel', background='white', foreground='#24364b')
+        estilo.configure('Title.TLabel', background='white', foreground='#142c46', font=('Segoe UI', 12, 'bold'))
+        estilo.configure('Muted.TLabel', background='white', foreground='#526477', font=('Segoe UI', 9))
+        estilo.configure('Status.TLabel', background='white', foreground='#31556d')
+        estilo.configure('Footer.TLabel', background='#eef2f6', foreground='#526477', font=('Segoe UI', 9))
+        estilo.configure('TEntry', padding=7, fieldbackground='white')
+        estilo.configure('TCombobox', padding=6, fieldbackground='white')
+        estilo.map('TCombobox', fieldbackground=[('readonly', 'white')], foreground=[('readonly', '#24364b')])
+        estilo.configure('TButton', padding=(12, 9), background='#e5ecf3', foreground='#24364b')
+        estilo.map('TButton', background=[('active', '#d7e3ee')], foreground=[('disabled', '#768596')])
+        estilo.configure('Primary.TButton', padding=(20, 11), background='#087f73', foreground='white', font=('Segoe UI', 11, 'bold'))
+        estilo.map('Primary.TButton', background=[('disabled', '#c5d4d2'), ('pressed', '#055c54'), ('active', '#096c63')],
+                   foreground=[('disabled', '#526477'), ('!disabled', 'white')])
+        estilo.configure('Query.Horizontal.TProgressbar', background='#087f73', troughcolor='#e5ecf3', borderwidth=0, thickness=5)
 
     def mostrar(self, texto):
         self.texto.configure(state='normal'); self.texto.delete('1.0', 'end')
