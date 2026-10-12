@@ -148,3 +148,43 @@ A interface usa **Garamond**, incluindo títulos, campos, menus e logs, com tama
 A fonte Garamond foi substituída por **Segoe UI**, com Arial como alternativa quando necessário. A interface segue a referência com cabeçalho e menu verde-escuros, fundo cinza-claro, cartões informativos simétricos, faixas verdes discretas e ícones desenhados localmente em círculos. Mantém o arquivo original da logo e suas cores; não redesenha a marca. Os campos continuam com seus significados reais: a aba da planilha não virou um filtro de categoria. A barra de progresso continua baseada na pesquisa atual, sem animação fictícia.
 
 Atualize somente `interface.py` e abra `abrir_monitor.bat`; não é necessário instalar fontes ou dependências adicionais no Windows. Os 45 testes e a compilação passaram. O ambiente sem tela gráfica não permite afirmar que a aparência final está visualmente validada no Windows ou que é uma reprodução exata da imagem.
+
+## Tela pós-consulta: painel documental
+
+Após a consulta, abre-se uma janela separada com identificação do instrumento, pesquisa nos documentos da execução, resumo executivo, alertas e seis seções detalhadas. A tela inicial, seus filtros, a abertura do Edge e o controle cumulativo permanecem disponíveis. **Nova consulta** retorna à tela inicial e não apaga execuções anteriores.
+
+O botão **Ver painel** reabre os dados da execução atual. Se ainda não houver dados em memória, permite selecionar a pasta **resultado** de uma execução salva em `saidas/online_.../resultado`, sem fazer nova pesquisa na internet ou exigir PDFs preparados manualmente. A leitura histórica não troca o controle cumulativo selecionado. A pasta precisa manter os documentos e o manifesto interno original ao lado dos relatórios.
+
+A pesquisa por categoria, sindicato, município, CNPJ ou registro filtra somente os documentos efetivamente obtidos nessa execução. Não é um novo filtro enviado ao Mediador. Para pesquisar novamente a fonte oficial, use **Nova consulta** e os filtros reais da tela inicial. Documentos já existentes no controle também podem aparecer no painel.
+
+### Fontes, identificação e referências
+
+`analise_resultados.py` lê os PDFs da consulta, sem modificar os arquivos, segmenta as cláusulas e registra número literal, título, texto completo, páginas físicas, arquivo, registro e SHA256. Identifica categoria e datas em formatos documentais reconhecidos. Se não houver confirmação suficiente, informa Não localizado ou Não confirmado. O papel dos sindicatos não é deduzido pela ordem das assinaturas. Entidades signatárias e CNPJs identificados aparecem para conferência; siglas ou formatos não reconhecidos geram pendência.
+
+O documento nunca é marcado como vigente apenas porque foi localizado. Aditivos são relacionados somente por referência explícita ao registro ou processo da convenção principal e quando essa convenção também está disponível. O programa não consolida efeitos de aditivos, não confirma sucessão jurídica e não aplica regras automaticamente.
+
+### Resumo e detalhes
+
+O resumo executivo contém apenas **Reajuste salarial** e **Contribuições assistenciais**, com separação de empregados e patronal. A destinação ambígua é marcada como não confirmada. Contribuição sindical ou social não é automaticamente tratada como assistencial. Prévia e pontos de condições são recortes literais por palavras-chave, não interpretação jurídica ou afirmação de regra aplicável. A prévia pode estar incompleta; tabelas, faixas, proporcionalidades, oposições e exceções exigem a leitura integral pelo DP. A ausência de um item na classificação não comprova que a regra não existe.
+
+As seis seções (salários, jornada, benefícios, obrigações do DP, atenção e comparativo) expandem e recolhem. Há filtro por assunto. **Ver cláusula** abre o texto integral segmentado, inclusive continuação em outras páginas, e sua referência. É possível abrir o PDF no navegador com a página indicada; o leitor PDF instalado pode ignorar a indicação, caso em que a referência textual continua disponível. O download original DOC/DOCX/PDF também tem acesso próprio quando identificado. PDFs de impressão permanecem identificados como tal nas referências.
+
+### Comparativo, exportação e impressão
+
+O comparativo permite selecionar um PDF anterior para leitura local. Só é realizado quando ambos são CCTs, o registro é anterior e categoria e CNPJs signatários são compatíveis. Títulos repetidos ou documentação insuficiente impedem comparação automática. O resultado é um **diff textual** com referências dos dois documentos, não uma análise jurídica nem confirmação de que o documento escolhido é o predecessor aplicável. Não gera percentuais comparados ou conclusões sem evidência. O PDF anterior não é modificado.
+
+**Exportar resumo em PDF** gera o resumo de identificação com os dois assuntos, referências e limites. Não pode substituir os documentos de origem, o PDF anterior selecionado ou uma planilha. Não usa serviços externos ou dependências novas. O exportador usa fonte padrão PDF com caracteres WinAnsi; caracteres não suportados interrompem a exportação em vez de serem substituídos silenciosamente. **Imprimir resumo**, no Windows, exporta e solicita a impressão ao aplicativo PDF associado. O aplicativo pode não oferecer essa ação; nesse caso, o erro é informado e o PDF exportado continua disponível.
+
+### Atualizar e verificar
+
+Na instalação existente, feche o programa e copie os arquivos novos **analise_resultados.py** e **painel_resultados.py**, além de substituir **interface.py**. Preserve a logo local, a configuração, `.venv`, planilhas e pastas de resultados. Abra **abrir_monitor.bat**; não há nova preparação por CMD ou dependência adicional.
+
+Para verificar no Windows: abra **Ver painel**, selecione `resultado` de uma consulta salva, pesquise um registro, escolha o documento, expanda uma seção e abra sua cláusula e o PDF. Exporte o resumo para um arquivo novo. Confira os trechos e páginas com o PDF original. Teste **Nova consulta** e observe que o histórico e a planilha selecionada permanecem. Se não houver documentos disponíveis por bloqueio ou erro, o painel mostrará as pendências, sem simular resultados.
+
+### Validação efetivamente realizada
+
+Foram executados **57 testes locais**, incluindo metadados, contribuições não confundidas com outros tipos, destinação ambígua, pesquisa por CNPJ/município, limites da comparação, referências de cláusulas que continuam em outra página, expansão/recolhimento, acesso ao PDF com página e proteção de fontes e planilhas durante exportação. Os cliques de navegação e abertura foram testados com controles simulados, sem tela gráfica.
+
+Foi feita validação **offline com os 24 documentos oficiais já obtidos** na execução `online_20261009_042138_f937a507`: leitura, pesquisa e exportação. Na AL000242/2026 foram conferidas vigência documental de 01/01/2026 a 31/12/2027, cláusula TERCEIRA de reajuste (página 1, 4,11%) e cláusula TRIGÉSIMA NONA de taxa assistencial laboral (página 13). O PDF de resumo foi exportado e relido; hashes de todos os arquivos da execução original permaneceram iguais.
+
+Não houve nova consulta ao Mediador nesta alteração. O ambiente não possui tela gráfica e não é Windows; aparência, seleção visual, abertura pelo leitor PDF e impressão real precisam ser verificadas no computador do usuário. A leitura dos documentos anteriores não comprova a completude da busca ampliada por municípios nem resolve bloqueios HTTP 403.

@@ -9,3 +9,5 @@ A consulta anual anterior, com o filtro por UF, de 01/01/2026 a 09/10/2026 foi c
 A [alternativa assistida](GUIA_ASSISTIDO.md) permanece disponível. As regras de trabalho e proteção de dados estão em [AGENTS.md](AGENTS.md).
 
 A versão atual reúne quatro pesquisas: CCT e aditivo por UF AL e pelos municípios de AL, usando Todos disponíveis do seletor oficial. Qualquer município de Alagoas é aceito quando confirmado no documento, sem exigir abrangência no estado inteiro. A busca ampliada ainda precisa de validação real, incluindo o exemplo AL000030/2026; os resultados anteriores não comprovam sua completude.
+
+Após a consulta, o painel documental permite pesquisar os resultados, conferir cláusulas completas com páginas, examinar os dois assuntos do resumo executivo e exportar um PDF. O botão **Ver painel** também abre uma consulta salva. A análise é textual e conservadora, com pendências explícitas; não confirma vigência jurídica nem substitui a leitura integral pelo DP. Veja os limites e a atualização em [GUIA_MONITOR.md](GUIA_MONITOR.md).

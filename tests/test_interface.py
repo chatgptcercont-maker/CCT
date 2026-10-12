@@ -19,7 +19,7 @@ class InterfaceTests(unittest.TestCase):
         app.root=MagicMock();app.logs=MagicMock();app.texto=MagicMock()
         app.percentual=Valor(0);app.indicador=Valor();app.status=Valor()
         app.fila=queue.Queue();app.ocupado=True;app.abas_resultados=MagicMock()
-        app.campo_periodo=MagicMock()
+        app.campo_periodo=MagicMock();app.botao_painel=MagicMock();app.exibir_painel=MagicMock()
         for nome in ['consultar','escolher','campo_controle','campo_aba','abrir']:
             setattr(app,nome,MagicMock())
         return app
@@ -58,6 +58,17 @@ class InterfaceTests(unittest.TestCase):
                 app.abrir_resultados()
             abrir.assert_called_once_with(Path(tmp).resolve())
 
+    def test_painel_historico_nao_troca_controle_selecionado(self):
+        app=self.app_sem_tela();app.dados_painel=None;app.controle=Valor('controle-original.xlsx')
+        dados={'documentos':[],'pendencias':[],'completa':False,'consultada_em':'Não confirmado'}
+        with patch('interface.filedialog.askdirectory',return_value='consulta/resultado'), \
+                patch('analise_resultados.carregar_consulta',return_value=dados) as carregar, \
+                patch('painel_resultados.PainelResultados') as painel:
+            Aplicacao.exibir_painel(app)
+        carregar.assert_called_once_with('consulta/resultado')
+        painel.assert_called_once()
+        self.assertEqual(app.controle.get(),'controle-original.xlsx')
+
     def test_botao_chama_online_sem_anexos_e_guarda_controle_cumulativo(self):
         with tempfile.TemporaryDirectory() as tmp:
             p=Path(tmp);novo=p/'controle.xlsx';novo.write_bytes(b'arquivo ficticio de resultado')
@@ -65,6 +76,7 @@ class InterfaceTests(unittest.TestCase):
             app.root=MagicMock();app.config={};app.controle=Valor();app.aba=Valor();app.status=Valor()
             app.periodo=Valor('Ano de 2026');app.campo_periodo=MagicMock()
             app.logs=MagicMock();app.percentual=Valor(0);app.indicador=Valor();app.abas_resultados=MagicMock()
+            app.botao_painel=MagicMock();app.exibir_painel=MagicMock()
             app.fila=queue.Queue();app.ocupado=False;app.mostrar=MagicMock();app.ultima_pasta=None
             for nome in ['consultar','escolher','campo_controle','campo_aba','progresso','abrir']:setattr(app,nome,MagicMock())
             result={'pasta':p,'controle':novo,'completa':False,'resumo':'Consulta com pendências'}

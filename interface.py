@@ -76,6 +76,7 @@ class Aplicacao:
         self.fila = queue.Queue()
         self.ocupado = False
         self.ultima_pasta = None
+        self.dados_painel = None
         self.config = carregar_config()
         self.controle = tk.StringVar(value=self.config.get('controle', ''))
         self.aba = tk.StringVar(value=self.config.get('aba', ''))
@@ -167,6 +168,7 @@ class Aplicacao:
         botoes = tk.Frame(filtros, background='white'); botoes.pack(fill='x')
         self.consultar = ttk.Button(botoes, text='Consultar novidades', style='Primary.TButton', command=self.iniciar); self.consultar.pack(side='left')
         self.abrir = ttk.Button(botoes, text='Abrir resultados', command=self.abrir_resultados, state='disabled'); self.abrir.pack(side='left', padx=8)
+        self.botao_painel = ttk.Button(botoes, text='Ver painel', command=self.exibir_painel); self.botao_painel.pack(side='left')
         ttk.Label(filtros, text='Execução manual · sem agendamento', style='Muted.TLabel').pack(anchor='w', pady=(9,0))
 
         self.card_resultados = Cartao(self.pagina); self.card_resultados.pack(fill='x')
@@ -339,6 +341,19 @@ class Aplicacao:
     def trabalhar(self, controle, aba, ano=None, ontem=False):
         try:
             resultado = executar_online(controle, BASE/'saidas', aba, lambda m: self.fila.put(('progresso', m)), ano=ano, ontem=ontem)
+            self.fila.put(('progresso', 'Organizando as referências documentais do painel…'))
+            try:
+                from analise_resultados import carregar_consulta
+                resultado['dados_painel'] = carregar_consulta(resultado['pasta'])
+                resultado['dados_painel']['completa'] = resultado['completa']
+                # Cada execução já possui pasta própria; não altera relatórios anteriores.
+                arquivo = resultado['pasta'] / 'painel_documental.json'
+                if not arquivo.exists():
+                    arquivo.write_text(json.dumps(resultado['dados_painel'], ensure_ascii=False, indent=2), encoding='utf-8')
+            except Exception as exc:
+                resultado['dados_painel'] = {'documentos': [], 'pendencias': [
+                    'Leitura para o painel não confirmada: '+type(exc).__name__+'. Os relatórios da consulta continuam disponíveis.'],
+                    'completa':False,'consultada_em':'Não confirmado'}
             self.fila.put(('resultado', resultado))
         except Exception as exc:
             self.fila.put(('erro', f'Consulta não concluída: {type(exc).__name__}. Verifique permissões da pasta e instalação.'))
@@ -362,6 +377,8 @@ class Aplicacao:
                         self.registrar_etapa(dado); self.indicador.set('Execução interrompida · consulta não confirmada')
                     else:
                         self.ultima_pasta = dado['pasta']; self.abrir.configure(state='normal')
+                        self.dados_painel = dado.get('dados_painel')
+                        self.botao_painel.configure(state='normal' if self.dados_painel else 'disabled')
                         self.status.set('Consulta concluída.' if dado['completa'] else 'Consulta com pendências. Confira o relatório e o log.')
                         self.registrar_etapa(self.status.get())
                         self.indicador.set('Execução encerrada · consulte o resultado e as pendências')
@@ -375,6 +392,8 @@ class Aplicacao:
                                 salvar_config(self.config)
                             except OSError:
                                 self.status.set('Resultado salvo. Não foi possível guardar a seleção do controle para a próxima abertura.')
+                        if self.dados_painel:
+                            self.exibir_painel()
         except queue.Empty:
             pass
         self.root.after(100, self.atualizar)
@@ -385,6 +404,25 @@ class Aplicacao:
                 os.startfile(self.ultima_pasta.resolve())
             else:
                 messagebox.showinfo('Resultados', str(self.ultima_pasta.resolve()))
+
+    def exibir_painel(self):
+        if not self.dados_painel:
+            pasta = filedialog.askdirectory(title='Selecionar a pasta resultado de uma consulta salva', initialdir=BASE/'saidas')
+            if not pasta:
+                return
+            try:
+                from analise_resultados import carregar_consulta
+                self.dados_painel = carregar_consulta(pasta)
+            except Exception as exc:
+                messagebox.showerror('Consulta salva indisponível', f'{type(exc).__name__}: {exc}. Escolha a pasta resultado que contém os relatórios de uma execução.')
+                return
+        from painel_resultados import PainelResultados
+        def voltar():
+            self.root.deiconify(); self.root.lift(); self.navegar('Início')
+        try:
+            PainelResultados(self.root, self.dados_painel, Cartao, voltar)
+        except Exception as exc:
+            messagebox.showerror('Painel indisponível', f'{type(exc).__name__}: {exc}. Os relatórios continuam em Abrir resultados.')
 
     def fechar(self):
         if self.ocupado:
