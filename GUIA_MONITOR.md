@@ -4,20 +4,16 @@ O fluxo principal é online: abra a interface e clique em **Consultar novidades*
 
 ## Preparar e abrir no Windows
 
-Instale Python 3.11 ou 3.12 pelo distribuidor oficial, com Tcl/Tk e o comando `py` disponíveis. Na pasta do projeto, abra o Prompt de Comando:
+Instale Python 3.11 ou mais recente pelo site oficial, com Tcl/Tk e a opção **Add Python to PATH**. O Microsoft Edge também deve estar instalado.
 
-```bat
-py -3 -m venv .venv
-.venv\Scripts\python.exe -m pip install -r requirements.txt
-.venv\Scripts\python.exe -m playwright install chromium
-.venv\Scripts\python.exe -m unittest discover -s tests -v
-```
+1. Baixe o ZIP do projeto e use **Extrair tudo**.
+2. Entre na pasta extraída e dê dois cliques em **abrir_monitor.bat**.
+3. Na primeira abertura, aguarde a preparação automática. É necessária conexão com a internet para baixar as dependências fixadas em `requirements.txt`.
+4. Nas próximas aberturas, o programa verifica os componentes e abre a janela sem reinstalar tudo. Uma mudança nos requisitos ou componentes ausentes aciona nova preparação.
 
-Depois dê dois cliques em **`abrir_monitor.bat`**. Também é possível abrir com:
+Não é necessário digitar comandos no CMD. Uma janela de preparação aparece automaticamente e permanece aberta se houver erro. Não execute dentro do ZIP. A preparação usa `.venv` na pasta do projeto, não modifica planilhas e não requer instalação de pacotes globalmente. No Windows usa o Edge e não baixa Chromium. Se mover a pasta depois da preparação, o ambiente Python pode precisar ser recriado.
 
-```bat
-.venv\Scripts\python.exe interface.py
-```
+Para atualizar uma instalação existente, feche o monitor e copie **abrir_monitor.bat** e **preparar_monitor.py** da versão atual para a pasta existente. Preserve a pasta `.venv`, a configuração e os resultados. A preparação automática foi coberta por testes locais; o fluxo completo do arquivo BAT ainda precisa de validação no Windows.
 
 No Windows, o Microsoft Edge precisa estar instalado. Ao clicar em **Consultar novidades**, o programa abre uma janela visível do Edge, em uma sessão separada do seu perfil pessoal. Aguarde sem fechar ou usar essa janela: o preenchimento dos filtros e a coleta continuam automáticos. No Linux, o coletor mantém o Chromium sem janela.
 
