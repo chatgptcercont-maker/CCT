@@ -12,6 +12,26 @@ from exemplos.criar_demo import pdf_ficticio, documento
 class AnualTests(unittest.TestCase):
     hoje=date(2026,10,9)
 
+    def test_ontem_apenas_um_dia_inclusive_na_virada_do_ano(self):
+        self.assertEqual(online.periodo_consulta(date(2026,10,12),ontem=True),(date(2026,10,11),date(2026,10,11)))
+        self.assertEqual(online.periodo_consulta(date(2026,1,1),ontem=True),(date(2025,12,31),date(2025,12,31)))
+        with self.assertRaises(ValueError):online.periodo_consulta(self.hoje,2026,ontem=True)
+        inicio,fim=online.periodo_consulta(self.hoje,ontem=True)
+        monitor.extrair(documento(data='08/10/2026'),fim,inicio)
+        for d in ['07/10/2026','09/10/2026']:
+            with self.assertRaises(ValueError):monitor.extrair(documento(data=d),fim,inicio)
+
+    def test_execucao_ontem_envia_as_duas_datas_e_registra_no_resumo(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            def coletar(browser,docs,hoje,eventos,progresso,inicio=None,catalogo=None):
+                self.assertEqual((inicio,hoje),(date(2026,10,8),date(2026,10,8)))
+                pdf_ficticio(docs/'ontem.pdf',documento(data='08/10/2026'))
+                return [{'registro':'AL000001/2026','arquivo':'documentos/ontem.pdf','fonte':online.URL}],[],{tipo+':'+area:1 for tipo,area in online.PESQUISAS}
+            with patch.object(online,'hoje_alagoas',return_value=self.hoje),patch.object(online,'coletar',side_effect=coletar),patch('playwright.sync_api.sync_playwright'):
+                r=online.executar_online(raiz=Path(tmp),ontem=True)
+            self.assertTrue(r['completa'])
+            self.assertIn('08/10/2026 a 08/10/2026',r['resumo'])
+
     def test_linha_com_referencia_usa_registro_do_documento(self):
         page=MagicMock();row=MagicMock();doc=MagicMock()
         row.inner_text.return_value='AL000001/2026 referência AL000099/2025'

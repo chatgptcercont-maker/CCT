@@ -92,7 +92,7 @@ class Aplicacao:
         ttk.Label(filtros, text='Período de registro', style='Card.TLabel').grid(row=1, column=0, sticky='w')
         ttk.Label(filtros, text='Aba da planilha · opcional', style='Card.TLabel').grid(row=1, column=1, sticky='w', padx=(18, 0))
         self.campo_periodo = ttk.Combobox(filtros, textvariable=self.periodo,
-            values=['Ano de 2026', 'Últimos 7 dias'], state='readonly', width=28)
+            values=['Ano de 2026', 'Últimos 7 dias', 'Ontem'], state='readonly', width=28)
         self.campo_periodo.grid(row=2, column=0, sticky='ew', pady=(5, 12))
         self.campo_aba = ttk.Entry(filtros, textvariable=self.aba)
         self.campo_aba.grid(row=2, column=1, sticky='ew', padx=(18, 0), pady=(5, 12))
@@ -191,11 +191,11 @@ class Aplicacao:
         self.campo_periodo.configure(state='disabled')
         self.status.set('Consultando o Mediador…'); self.mostrar('Consulta em andamento. Aguarde o relatório.'); self.progresso.start()
         aba = self.aba.get().strip() or None
-        threading.Thread(target=self.trabalhar, args=(controle, aba, ano), daemon=True).start()
+        threading.Thread(target=self.trabalhar, args=(controle, aba, ano, self.periodo.get() == 'Ontem'), daemon=True).start()
 
-    def trabalhar(self, controle, aba, ano=None):
+    def trabalhar(self, controle, aba, ano=None, ontem=False):
         try:
-            resultado = executar_online(controle, BASE/'saidas', aba, lambda m: self.fila.put(('progresso', m)), ano=ano)
+            resultado = executar_online(controle, BASE/'saidas', aba, lambda m: self.fila.put(('progresso', m)), ano=ano, ontem=ontem)
             self.fila.put(('resultado', resultado))
         except Exception as exc:
             self.fila.put(('erro', f'Consulta não concluída: {type(exc).__name__}. Verifique permissões da pasta e instalação.'))

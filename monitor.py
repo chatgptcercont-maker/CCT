@@ -196,7 +196,9 @@ def main():
     p.add_argument('--saida', type=Path, help='Assistido: pasta nova; online: raiz das pastas de execução')
     p.add_argument('--hoje', type=date.fromisoformat, help='Somente modo assistido: AAAA-MM-DD; padrão: data local')
     p.add_argument('--consultar', action='store_true', help='Consulta online automática com navegador, sem PDFs ou manifesto do usuário')
-    p.add_argument('--ano', type=int, help='Online: todos os registros do ano indicado, até a data atual')
+    periodo = p.add_mutually_exclusive_group()
+    periodo.add_argument('--ano', type=int, help='Online: todos os registros do ano indicado, até a data atual')
+    periodo.add_argument('--ontem', action='store_true', help='Online: somente registros do dia anterior em Alagoas')
     args = p.parse_args()
     if not args.consultar and not args.manifesto:
         p.error('Informe --manifesto ou --consultar')
@@ -206,12 +208,14 @@ def main():
         p.error('--hoje é exclusivo do modo assistido; a consulta online usa a data atual de Alagoas')
     if args.consultar:
         from consulta_online import executar_online
-        resultado = executar_online(args.controle, args.saida or Path('saidas'), args.aba, print, ano=args.ano)
+        resultado = executar_online(args.controle, args.saida or Path('saidas'), args.aba, print, ano=args.ano, ontem=args.ontem)
         print(resultado['resumo'])
         print('Resultados:', resultado['pasta'].resolve())
         return resultado['codigo']
     if args.ano is not None:
         p.error('--ano requer --consultar')
+    if args.ontem:
+        p.error('--ontem requer --consultar')
     saida = args.saida or Path('saidas') / (datetime.now().strftime('%Y%m%d_%H%M%S')+'_'+uuid.uuid4().hex[:8])
     try:
         code = executar(args.manifesto, args.controle, saida, args.hoje or date.today(), args.aba)

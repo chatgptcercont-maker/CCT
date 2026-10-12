@@ -35,6 +35,11 @@ class InterfaceTests(unittest.TestCase):
                 self.assertFalse(app.ocupado)
                 self.assertIn('pendências',app.status.get())
                 self.assertTrue((p/'config.json').is_file())
+                app.periodo.set('Ontem')
+                online.reset_mock()
+                app.iniciar();app.atualizar()
+                self.assertIsNone(online.call_args.kwargs['ano'])
+                self.assertTrue(online.call_args.kwargs['ontem'])
 
 
 if __name__ == '__main__':unittest.main()

@@ -42,7 +42,12 @@ def hoje_alagoas():
     return datetime.now(ZoneInfo('America/Maceio')).date()
 
 
-def periodo_consulta(hoje, ano=None):
+def periodo_consulta(hoje, ano=None, ontem=False):
+    if ontem:
+        if ano is not None:
+            raise ValueError('Escolha o ano ou ontem, não os dois períodos')
+        dia = hoje-timedelta(days=1)
+        return dia, dia
     if ano is None:
         return hoje-timedelta(days=6), hoje
     if not 1900 <= ano <= hoje.year:
@@ -345,9 +350,9 @@ def gerar_relatorio(catalogo, instrumentos, pasta, resultado, inicio, fim, compl
     (resultado/'instrumentos_consultados_AL.txt').write_text('\n'.join(texto)+'\n', encoding='utf-8')
 
 
-def executar_online(controle=None, raiz=Path('saidas'), aba=None, progresso=lambda mensagem: None, ano=None):
+def executar_online(controle=None, raiz=Path('saidas'), aba=None, progresso=lambda mensagem: None, ano=None, ontem=False):
     hoje = hoje_alagoas()
-    inicio, fim = periodo_consulta(hoje, ano)
+    inicio, fim = periodo_consulta(hoje, ano, ontem)
     pasta = raiz / ('online_'+datetime.now().strftime('%Y%m%d_%H%M%S')+'_'+uuid.uuid4().hex[:8])
     pasta.mkdir(parents=True, exist_ok=False)
     docs = pasta/'documentos'; docs.mkdir()
@@ -403,8 +408,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--controle', type=Path)
     parser.add_argument('--aba')
-    parser.add_argument('--ano', type=int)
+    periodo = parser.add_mutually_exclusive_group()
+    periodo.add_argument('--ano', type=int)
+    periodo.add_argument('--ontem', action='store_true', help='Somente registros do dia anterior em Alagoas')
     args = parser.parse_args()
-    resultado = executar_online(args.controle, aba=args.aba, progresso=print, ano=args.ano)
+    resultado = executar_online(args.controle, aba=args.aba, progresso=print, ano=args.ano, ontem=args.ontem)
     print(resultado['resumo']); print('Resultados:', resultado['pasta'].resolve())
     raise SystemExit(resultado['codigo'])
