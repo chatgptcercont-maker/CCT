@@ -142,3 +142,9 @@ Foram executados **45 testes locais**, incluindo fluxo do botão, seleção de p
 ## Tipografia e alinhamento
 
 A interface usa **Garamond**, incluindo títulos, campos, menus e logs, com tamanhos ajustados para leitura. A fonte precisa estar instalada no Windows. Se estiver ausente, o programa informa essa condição e usa Times New Roman; não instala fontes nem altera a logo original. Os três cartões informativos compartilham a mesma altura, calculada pelo maior conteúdo, e colunas de largura igual. A altura é recalculada ao redimensionar para evitar cortar os textos. Os campos de período e aba usam colunas iguais, margens correspondentes e preenchimento vertical padronizado. Para atualizar, substitua somente `interface.py`. Os 45 testes passaram; a conferência visual final no Windows permanece necessária.
+
+## Estilo da referência visual atual
+
+A fonte Garamond foi substituída por **Segoe UI**, com Arial como alternativa quando necessário. A interface segue a referência com cabeçalho e menu verde-escuros, fundo cinza-claro, cartões informativos simétricos, faixas verdes discretas e ícones desenhados localmente em círculos. Mantém o arquivo original da logo e suas cores; não redesenha a marca. Os campos continuam com seus significados reais: a aba da planilha não virou um filtro de categoria. A barra de progresso continua baseada na pesquisa atual, sem animação fictícia.
+
+Atualize somente `interface.py` e abra `abrir_monitor.bat`; não é necessário instalar fontes ou dependências adicionais no Windows. Os 45 testes e a compilação passaram. O ambiente sem tela gráfica não permite afirmar que a aparência final está visualmente validada no Windows ou que é uma reprodução exata da imagem.

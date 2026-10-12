@@ -35,10 +35,12 @@ def salvar_config(config):
 
 class Cartao(tk.Canvas):
     """Painel com borda discreta e cantos arredondados, sem dependências extras."""
-    def __init__(self, parent, grupo=None):
+    def __init__(self, parent, grupo=None, destaque=False):
         self.grupo = grupo
-        super().__init__(parent, background='#f3f4f3', highlightthickness=0, height=80)
-        self.borda = self.create_polygon(0, 0, 1, 0, 1, 1, 0, 1, fill='white', outline='#dce5e0', smooth=True)
+        self.destaque = destaque
+        super().__init__(parent, background='#f0f5f7', highlightthickness=0, height=80)
+        self.borda = self.create_polygon(0, 0, 1, 0, 1, 1, 0, 1, fill='white', outline='#dde7ec', smooth=True)
+        self.traco = self.create_line(3, 12, 3, 60, fill='#087c69', width=3) if destaque else None
         self.conteudo = tk.Frame(self, background='white')
         self.janela = self.create_window(16, 14, window=self.conteudo, anchor='nw')
         self.bind('<Configure>', self.redimensionar)
@@ -46,7 +48,7 @@ class Cartao(tk.Canvas):
 
     def ajustar_altura(self, event=None):
         cartoes = self.grupo if self.grupo else [self]
-        altura = max(c.conteudo.winfo_reqheight()+28 for c in cartoes)
+        altura = max(max(132 if c.destaque else 0, c.conteudo.winfo_reqheight()+28) for c in cartoes)
         for cartao in cartoes:
             if int(cartao.cget('height')) != altura:
                 cartao.configure(height=altura)
@@ -54,6 +56,8 @@ class Cartao(tk.Canvas):
     def redimensionar(self, event):
         w, h, r = event.width-1, event.height-1, 12
         self.coords(self.borda, r,1,w-r,1,w,1,w,r,w,h-r,w,h,w-r,h,r,h,1,h,1,h-r,1,r,1,1)
+        if self.traco is not None:
+            self.coords(self.traco, 3, 14, 3, max(14,h-14))
         self.itemconfigure(self.janela, width=max(1, w-32))
 
 
@@ -65,9 +69,9 @@ class Aplicacao:
         altura = min(820, max(500, root.winfo_screenheight()-110))
         self.root.geometry(f'{largura}x{altura}')
         self.root.minsize(760, 500)
-        self.root.configure(background='#f3f4f3')
+        self.root.configure(background='#f0f5f7')
         familias = {f.lower() for f in tkfont.families(root)}
-        self.fonte = 'Garamond' if 'garamond' in familias else 'Times New Roman'
+        self.fonte = 'Segoe UI' if 'segoe ui' in familias else 'Arial'
         self.configurar_estilo()
         self.fila = queue.Queue()
         self.ocupado = False
@@ -80,7 +84,7 @@ class Aplicacao:
         self.percentual = tk.DoubleVar(value=0)
         self.indicador = tk.StringVar(value='Nenhuma consulta em andamento')
 
-        cabecalho = tk.Frame(root, background='#005952', padx=22, pady=16)
+        cabecalho = tk.Frame(root, background='#064d47', padx=22, pady=16)
         cabecalho.pack(fill='x')
         marca = tk.Frame(cabecalho, background='white', padx=12, pady=6)
         marca.pack(side='left', padx=(0, 22))
@@ -96,53 +100,56 @@ class Aplicacao:
         if self.logo is not None:
             tk.Label(marca, image=self.logo, background='white').pack()
         else:
-            tk.Label(marca, text='Cercont', background='white', foreground='#005952', font=(self.fonte, 21, 'bold')).pack()
-            tk.Label(marca, text='Logo local não encontrada', background='white', foreground='#5d6864', font=(self.fonte, 10)).pack()
-        titulos = tk.Frame(cabecalho, background='#005952')
+            tk.Label(marca, text='Cercont', background='white', foreground='#064d47', font=(self.fonte, 18, 'bold')).pack()
+            tk.Label(marca, text='Logo local não encontrada', background='white', foreground='#638193', font=(self.fonte, 10)).pack()
+        titulos = tk.Frame(cabecalho, background='#064d47')
         titulos.pack(side='left', fill='x', expand=True)
-        tk.Label(titulos, text='DEPARTAMENTO PESSOAL', background='#005952', foreground='#cce5dc', font=(self.fonte, 11, 'bold')).pack(anchor='w')
-        self.titulo = tk.Label(titulos, text='Monitor de Convenções e Aditivos', background='#005952', foreground='white', font=(self.fonte, 21, 'bold'), justify='left', anchor='w')
+        tk.Label(titulos, text='DEPARTAMENTO PESSOAL', background='#064d47', foreground='#cce5dc', font=(self.fonte, 11, 'bold')).pack(anchor='w')
+        self.titulo = tk.Label(titulos, text='Monitor de Convenções e Aditivos', background='#064d47', foreground='white', font=(self.fonte, 18, 'bold'), justify='left', anchor='w')
         self.titulo.pack(anchor='w', pady=(4, 4), fill='x')
-        tk.Label(titulos, text='Alagoas e seus municípios · Sistema Mediador', background='#005952', foreground='#d9e7e4', font=(self.fonte, 12)).pack(anchor='w')
+        tk.Label(titulos, text='Alagoas e seus municípios · Sistema Mediador', background='#064d47', foreground='#d9e7e4', font=(self.fonte, 10)).pack(anchor='w')
         titulos.bind('<Configure>', lambda e: self.titulo.configure(wraplength=max(250,e.width)))
 
-        corpo = tk.Frame(root, background='#f3f4f3')
+        corpo = tk.Frame(root, background='#f0f5f7')
         corpo.pack(fill='both', expand=True)
-        lateral = tk.Frame(corpo, background='#00463f', width=154)
+        lateral = tk.Frame(corpo, background='#033f38', width=154)
         lateral.pack(side='left', fill='y'); lateral.pack_propagate(False)
-        tk.Label(lateral, text='NAVEGAÇÃO', background='#00463f', foreground='#cce5dc', font=(self.fonte, 10, 'bold')).pack(anchor='w', padx=18, pady=(24, 12))
+        tk.Label(lateral, text='NAVEGAÇÃO', background='#033f38', foreground='#cce5dc', font=(self.fonte, 10, 'bold')).pack(anchor='w', padx=18, pady=(24, 12))
         self.menu = {}
         for nome, icone in [('Início','⌂'), ('Consultas','≡'), ('Configurações','⚙'), ('Ajuda','?')]:
             botao = tk.Button(lateral, text=f'{icone}   {nome}', command=lambda n=nome: self.navegar(n),
-                              background='#00463f', foreground='white', activebackground='#126f61', activeforeground='white',
-                              relief='flat', borderwidth=0, anchor='w', padx=16, pady=12, font=(self.fonte, 12), cursor='hand2')
+                              background='#033f38', foreground='white', activebackground='#226c5c', activeforeground='white',
+                              relief='flat', borderwidth=0, anchor='w', padx=16, pady=12, font=(self.fonte, 10), cursor='hand2')
             botao.pack(fill='x', padx=8, pady=3); self.menu[nome] = botao
-        tk.Label(lateral, text='Execução manual\nSem agendamento', background='#00463f', foreground='#cce5dc', font=(self.fonte, 11), justify='left').pack(side='bottom', anchor='w', padx=18, pady=20)
+        tk.Label(lateral, text='Execução manual\nSem agendamento', background='#033f38', foreground='#cce5dc', font=(self.fonte, 9), justify='left').pack(side='bottom', anchor='w', padx=18, pady=20)
 
-        self.canvas = tk.Canvas(corpo, background='#f3f4f3', highlightthickness=0)
+        self.canvas = tk.Canvas(corpo, background='#f0f5f7', highlightthickness=0)
         rolagem = ttk.Scrollbar(corpo, command=self.canvas.yview)
         rolagem.pack(side='right', fill='y'); self.canvas.pack(side='left', fill='both', expand=True)
         self.canvas.configure(yscrollcommand=rolagem.set)
-        self.pagina = tk.Frame(self.canvas, background='#f3f4f3', padx=20, pady=18)
+        self.pagina = tk.Frame(self.canvas, background='#f0f5f7', padx=20, pady=18)
         self.pagina_id = self.canvas.create_window(0, 0, window=self.pagina, anchor='nw')
         self.canvas.bind('<Configure>', self.redimensionar_pagina)
         self.pagina.bind('<Configure>', lambda e: self.canvas.configure(scrollregion=self.canvas.bbox('all')))
         root.bind('<MouseWheel>', self.rolar_pagina, add='+')
 
-        self.topo = tk.Frame(self.pagina, background='#f3f4f3'); self.topo.pack(fill='x', pady=(0, 14))
+        self.topo = tk.Frame(self.pagina, background='#f0f5f7'); self.topo.pack(fill='x', pady=(0, 14))
         self.cartoes = []
-        for icone, titulo, descricao in [('✓','Fonte oficial','Sistema Mediador\nConvenções e aditivos'),
-                                           ('⌖','Abrangência','Alagoas e todos os seus municípios'),
-                                           ('▤','Controle','Planilha preservada\nHistórico mantido nas cópias')]:
-            cartao = Cartao(self.topo, grupo=self.cartoes); self.cartoes.append(cartao)
-            ttk.Label(cartao.conteudo, text=f'{icone}  {titulo}', style='Title.TLabel').pack(anchor='w')
-            texto = ttk.Label(cartao.conteudo, text=descricao, style='Muted.TLabel', wraplength=230, justify='left')
-            texto.pack(anchor='w', pady=(6,0))
-            cartao.conteudo.bind('<Configure>', lambda e, t=texto: t.configure(wraplength=max(100,e.width)), add='+')
+        for tipo, titulo, valor, descricao in [
+                ('fonte','Fonte oficial','Sistema Mediador','Consulta às convenções e aditivos diretamente da fonte oficial.'),
+                ('local','Abrangência','Alagoas e municípios','Cobertura estadual e de qualquer município de Alagoas.'),
+                ('controle','Controle','Planilha preservada','Mantém o histórico nas cópias do controle.')]:
+            cartao = Cartao(self.topo, grupo=self.cartoes, destaque=True); self.cartoes.append(cartao)
+            self.criar_icone(cartao.conteudo, tipo).pack(side='left', anchor='n', padx=(0,14), pady=3)
+            detalhes = tk.Frame(cartao.conteudo, background='white'); detalhes.pack(side='left', fill='x', expand=True)
+            ttk.Label(detalhes, text=titulo, style='Muted.TLabel').pack(anchor='w')
+            forte = ttk.Label(detalhes, text=valor, style='Title.TLabel', wraplength=190, justify='left'); forte.pack(anchor='w', pady=(5,5))
+            texto = ttk.Label(detalhes, text=descricao, style='Muted.TLabel', wraplength=190, justify='left'); texto.pack(anchor='w')
+            detalhes.bind('<Configure>', lambda e, t=texto, f=forte: (t.configure(wraplength=max(100,e.width)),f.configure(wraplength=max(100,e.width))))
 
         self.card_filtros = Cartao(self.pagina); self.card_filtros.pack(fill='x', pady=(0,14))
         filtros = self.card_filtros.conteudo
-        ttk.Label(filtros, text='Prepare sua consulta', style='Title.TLabel').pack(anchor='w', pady=(0,12))
+        self.criar_titulo_painel(filtros, 'busca', 'Prepare sua consulta', 'Informe os dados para iniciar a consulta de convenções e aditivos.')
         self.campos = tk.Frame(filtros, background='white'); self.campos.pack(fill='x')
         self.grupo_periodo = tk.Frame(self.campos, background='white')
         self.grupo_aba = tk.Frame(self.campos, background='white')
@@ -164,7 +171,7 @@ class Aplicacao:
 
         self.card_resultados = Cartao(self.pagina); self.card_resultados.pack(fill='x')
         resultados = self.card_resultados.conteudo
-        ttk.Label(resultados, text='▤  Acompanhe a consulta', style='Title.TLabel').pack(anchor='w')
+        self.criar_titulo_painel(resultados, 'documento', 'Acompanhe a consulta')
         self.rotulo_status = ttk.Label(resultados, textvariable=self.status, style='Status.TLabel', wraplength=750, justify='left'); self.rotulo_status.pack(anchor='w', pady=(7,4))
         ttk.Label(resultados, textvariable=self.indicador, style='Muted.TLabel', wraplength=750).pack(anchor='w', pady=(0,6))
         self.progresso = ttk.Progressbar(resultados, mode='determinate', maximum=100, variable=self.percentual, style='Query.Horizontal.TProgressbar'); self.progresso.pack(fill='x', pady=(0,12))
@@ -175,16 +182,46 @@ class Aplicacao:
                      'O programa obtém os documentos automaticamente.\n'
                      'No Windows, aguarde sem fechar a janela do Edge.\n'
                      'Bloqueios e documentos indisponíveis são registrados como pendências.')
-        if self.fonte != 'Garamond':
-            self.mostrar(self.texto.get('1.0', 'end-1c')+'\n\nGaramond não está instalada neste computador; usando Times New Roman.')
         self.abas_resultados.select(1)
         self.navegar('Início')
         root.protocol('WM_DELETE_WINDOW', self.fechar)
         root.after(100, self.atualizar)
 
+    def criar_icone(self, parent, tipo, escuro=False):
+        fundo, linha = ('#064d47','white') if escuro else ('#d6ece4','#064d47')
+        c = tk.Canvas(parent, width=54, height=54, background='white', highlightthickness=0)
+        c.create_oval(1,1,53,53,fill=fundo,outline=fundo)
+        if tipo=='fonte':
+            c.create_oval(17,14,37,22,outline=linha,width=2)
+            c.create_line(17,18,17,35, smooth=True,fill=linha,width=2)
+            c.create_line(37,18,37,35,fill=linha,width=2)
+            for y in (25,32):c.create_arc(17,y-5,37,y+3,start=180,extent=180,style='arc',outline=linha,width=2)
+        elif tipo=='local':
+            c.create_line(27,41,17,27,16,20,20,14,27,12,34,14,38,20,37,27,27,41,smooth=True,fill=linha,width=2)
+            c.create_oval(23,18,31,26,outline=linha,width=2)
+        elif tipo=='controle':
+            c.create_polygon(27,12,39,18,37,33,27,42,17,33,15,18,fill='',outline=linha,width=2)
+            c.create_line(21,26,26,31,34,22,fill=linha,width=2)
+        elif tipo=='busca':
+            c.create_oval(16,14,31,29,outline=linha,width=2)
+            c.create_line(29,27,38,37,fill=linha,width=2)
+        else:
+            c.create_rectangle(18,13,36,40,outline=linha,width=2)
+            for y in (22,27,32):c.create_line(22,y,32,y,fill=linha,width=2)
+        return c
+
+    def criar_titulo_painel(self, parent, tipo, titulo, subtitulo=None):
+        linha = tk.Frame(parent, background='white'); linha.pack(fill='x', pady=(0,14))
+        self.criar_icone(linha,tipo,escuro=True).pack(side='left',padx=(0,14))
+        textos = tk.Frame(linha, background='white'); textos.pack(side='left',fill='x',expand=True)
+        ttk.Label(textos,text=titulo,style='Title.TLabel').pack(anchor='w')
+        if subtitulo:
+            legenda = ttk.Label(textos,text=subtitulo,style='Muted.TLabel',wraplength=600,justify='left'); legenda.pack(anchor='w',pady=(5,0))
+            textos.bind('<Configure>',lambda e:legenda.configure(wraplength=max(100,e.width)))
+
     def criar_area_texto(self, notebook, titulo):
         painel = tk.Frame(notebook, background='white'); notebook.add(painel, text=titulo)
-        texto = tk.Text(painel, wrap='word', height=11, background='#f6f8f6', foreground='#303a37', font=(self.fonte,12), relief='flat', padx=12, pady=10, spacing3=4, state='disabled')
+        texto = tk.Text(painel, wrap='word', height=11, background='#f4f7fa', foreground='#194e5a', font=(self.fonte,10), relief='flat', padx=12, pady=10, spacing3=4, state='disabled')
         texto.pack(side='left', fill='both', expand=True)
         barra = ttk.Scrollbar(painel, command=texto.yview); barra.pack(side='right', fill='y'); texto.configure(yscrollcommand=barra.set)
         return texto
@@ -211,7 +248,7 @@ class Aplicacao:
 
     def navegar(self, nome):
         for item, botao in self.menu.items():
-            botao.configure(background='#126f61' if item==nome else '#00463f')
+            botao.configure(background='#226c5c' if item==nome else '#033f38')
         if nome == 'Ajuda':
             messagebox.showinfo('Ajuda', 'Escolha o período e clique em Consultar novidades.\n'
                 'A planilha e sua aba são opcionais. O arquivo original é preservado.\n'
@@ -242,27 +279,27 @@ class Aplicacao:
 
     def configurar_estilo(self):
         for nome in ('TkDefaultFont', 'TkTextFont', 'TkMenuFont', 'TkHeadingFont'):
-            tkfont.nametofont(nome, root=self.root).configure(family=self.fonte, size=12)
-        self.root.option_add('*TCombobox*Listbox.font', (self.fonte, 12))
+            tkfont.nametofont(nome, root=self.root).configure(family=self.fonte, size=10)
+        self.root.option_add('*TCombobox*Listbox.font', (self.fonte, 10))
         estilo = ttk.Style(self.root)
         estilo.theme_use('clam')
-        estilo.configure('.', font=(self.fonte, 12))
-        estilo.configure('App.TFrame', background='#f3f4f3')
+        estilo.configure('.', font=(self.fonte, 10))
+        estilo.configure('App.TFrame', background='#f0f5f7')
         estilo.configure('Card.TFrame', background='white')
-        estilo.configure('Card.TLabel', background='white', foreground='#303a37')
-        estilo.configure('Title.TLabel', background='white', foreground='#005952', font=(self.fonte, 15, 'bold'))
-        estilo.configure('Muted.TLabel', background='white', foreground='#5d6864', font=(self.fonte, 11))
-        estilo.configure('Status.TLabel', background='white', foreground='#005952')
-        estilo.configure('Footer.TLabel', background='#f3f4f3', foreground='#5d6864', font=(self.fonte, 11))
+        estilo.configure('Card.TLabel', background='white', foreground='#194e5a')
+        estilo.configure('Title.TLabel', background='white', foreground='#064d47', font=(self.fonte, 11, 'bold'))
+        estilo.configure('Muted.TLabel', background='white', foreground='#638193', font=(self.fonte, 9))
+        estilo.configure('Status.TLabel', background='white', foreground='#064d47')
+        estilo.configure('Footer.TLabel', background='#f0f5f7', foreground='#638193', font=(self.fonte, 9))
         estilo.configure('TEntry', padding=7, fieldbackground='white')
         estilo.configure('TCombobox', padding=7, fieldbackground='white')
-        estilo.map('TCombobox', fieldbackground=[('readonly', 'white')], foreground=[('readonly', '#303a37')])
-        estilo.configure('TButton', padding=(12, 9), background='#e7eeeb', foreground='#303a37')
+        estilo.map('TCombobox', fieldbackground=[('readonly', 'white')], foreground=[('readonly', '#194e5a')])
+        estilo.configure('TButton', padding=(12, 9), background='#e6edf2', foreground='#194e5a')
         estilo.map('TButton', background=[('active', '#d5e3dd')], foreground=[('disabled', '#788580')])
-        estilo.configure('Primary.TButton', padding=(16, 9), background='#005952', foreground='white', font=(self.fonte, 12, 'bold'))
+        estilo.configure('Primary.TButton', padding=(16, 9), background='#087c69', foreground='white', font=(self.fonte, 10, 'bold'))
         estilo.map('Primary.TButton', background=[('disabled', '#c9d9d3'), ('pressed', '#003e39'), ('active', '#006b62')],
-                   foreground=[('disabled', '#5d6864'), ('!disabled', 'white')])
-        estilo.configure('Query.Horizontal.TProgressbar', background='#005952', troughcolor='#e7eeeb', borderwidth=0, thickness=5)
+                   foreground=[('disabled', '#638193'), ('!disabled', 'white')])
+        estilo.configure('Query.Horizontal.TProgressbar', background='#064d47', troughcolor='#e6edf2', borderwidth=0, thickness=5)
 
     def mostrar(self, texto):
         self.texto.configure(state='normal'); self.texto.delete('1.0', 'end')
