@@ -211,6 +211,7 @@ def coletar(browser, pasta, hoje, eventos, progresso, inicio=None, catalogo=None
     catalogados = set()
     for tipo, area in PESQUISAS:
         pesquisa = tipo + ':' + area
+        progresso({'total': None, 'examinados': 0, 'pesquisa': pesquisa})
         progresso('Pesquisando '+('convenções' if tipo == 'convencao' else 'aditivos de convenções')+
                   (' — estado de Alagoas' if area == 'estado' else ' — todos os municípios de Alagoas')+'…')
         # Sessões independentes impedem que a abrangência/session de uma pesquisa contamine a outra.
@@ -232,6 +233,7 @@ def coletar(browser, pasta, hoje, eventos, progresso, inicio=None, catalogo=None
             total, atual, paginas = pesquisar(page)
             eventos.append(f'{pesquisa}: resultado oficial {total} instrumento(s), {paginas} página(s)')
             vistos = set()
+            progresso({'total': total, 'examinados': 0, 'pesquisa': pesquisa})
             if paginas > 200:
                 raise ConsultaIncompleta('Mais de 200 páginas; consulta interrompida sem presumir completude')
             for numero in range(1, paginas+1):
@@ -246,6 +248,7 @@ def coletar(browser, pasta, hoje, eventos, progresso, inicio=None, catalogo=None
                     vistos.add(identidade)
                     if identidade in catalogados:
                         eventos.append(f'{pesquisa}: {identidade} já examinado em outra pesquisa; sem duplicar')
+                        progresso({'total': total, 'examinados': len(vistos), 'pesquisa': pesquisa})
                         continue
                     catalogados.add(identidade)
                     entrada = {'Solicitação': identidade, 'Pesquisa': pesquisa, 'Status': 'Documento não confirmado'}
@@ -266,6 +269,8 @@ def coletar(browser, pasta, hoje, eventos, progresso, inicio=None, catalogo=None
                         # Exclusões documentadas não são uma falha na coleta.
                         if not motivo.startswith('Excluído:'):
                             pendencias.append(tipo+': '+identidade+': '+motivo)
+                        progresso(f'{identidade}: {motivo}')
+                    progresso({'total': total, 'examinados': len(vistos), 'pesquisa': pesquisa})
                 if numero < paginas:
                     proxima = page.locator('#grdInstrumentos > table > tfoot a').filter(has_text=re.compile(r'^\s*'+str(numero+1)+r'\s*$'))
                     if proxima.count() != 1:
@@ -287,6 +292,7 @@ def coletar(browser, pasta, hoje, eventos, progresso, inicio=None, catalogo=None
                 motivo = 'CAPTCHA interativo detectado; consulta interrompida sem resolver ou contornar o desafio'
             pendencias.append(pesquisa+': '+motivo)
             eventos.append(pesquisa+': '+motivo+'; sem contornar a proteção ou repetir a pesquisa')
+            progresso(pesquisa+': '+motivo)
             if any(s in motivo for s in ['HTTP 401', 'HTTP 403', 'CAPTCHA interativo', 'Autenticação exigida', 'BLOQUEIO_DO_TUNEL_PROXY', 'ERRO_TLS']):
                 break
         finally:

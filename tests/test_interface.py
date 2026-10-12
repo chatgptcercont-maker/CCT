@@ -14,12 +14,57 @@ class Valor:
 
 
 class InterfaceTests(unittest.TestCase):
+    def app_sem_tela(self):
+        app=Aplicacao.__new__(Aplicacao)
+        app.root=MagicMock();app.logs=MagicMock();app.texto=MagicMock()
+        app.percentual=Valor(0);app.indicador=Valor();app.status=Valor()
+        app.fila=queue.Queue();app.ocupado=True;app.abas_resultados=MagicMock()
+        app.campo_periodo=MagicMock()
+        for nome in ['consultar','escolher','campo_controle','campo_aba','abrir']:
+            setattr(app,nome,MagicMock())
+        return app
+
+    def test_percentual_usa_contagem_real_e_aguarda_total(self):
+        app=self.app_sem_tela()
+        app.atualizar_percentual({'total':None})
+        self.assertEqual(app.percentual.get(),0)
+        self.assertIn('aguardando',app.indicador.get())
+        app.atualizar_percentual({'total':8,'examinados':3})
+        self.assertEqual(app.percentual.get(),37.5)
+        self.assertIn('3 de 8',app.indicador.get())
+
+    def test_mensagens_com_horario_e_erros_nao_declaram_sucesso(self):
+        app=self.app_sem_tela()
+        app.fila.put(('progresso','Pesquisando convenções'))
+        app.fila.put(('progresso',{'total':10,'examinados':2}))
+        app.fila.put(('erro','HTTP 403: consulta recusada'))
+        app.atualizar()
+        self.assertFalse(app.ocupado)
+        self.assertEqual(app.percentual.get(),20)
+        self.assertIn('interrompida',app.indicador.get())
+        linhas=[c.args[1] for c in app.logs.insert.call_args_list]
+        self.assertTrue(any('Pesquisando convenções' in s for s in linhas))
+        self.assertTrue(any('HTTP 403' in s for s in linhas))
+        self.assertRegex(linhas[0],r'^\[\d{2}/\d{2}/\d{4} \d{2}:\d{2}:\d{2}\]')
+
+    def test_escolha_planilha_e_abertura_resultados(self):
+        app=self.app_sem_tela();app.controle=Valor()
+        with patch('interface.filedialog.askopenfilename',return_value='C:/controle.xlsx'):
+            app.selecionar_controle()
+        self.assertEqual(app.controle.get(),'C:/controle.xlsx')
+        with tempfile.TemporaryDirectory() as tmp:
+            app.ultima_pasta=Path(tmp)
+            with patch('interface.os.name','nt'),patch('interface.os.startfile',create=True) as abrir:
+                app.abrir_resultados()
+            abrir.assert_called_once_with(Path(tmp).resolve())
+
     def test_botao_chama_online_sem_anexos_e_guarda_controle_cumulativo(self):
         with tempfile.TemporaryDirectory() as tmp:
             p=Path(tmp);novo=p/'controle.xlsx';novo.write_bytes(b'arquivo ficticio de resultado')
             app=Aplicacao.__new__(Aplicacao)
             app.root=MagicMock();app.config={};app.controle=Valor();app.aba=Valor();app.status=Valor()
             app.periodo=Valor('Ano de 2026');app.campo_periodo=MagicMock()
+            app.logs=MagicMock();app.percentual=Valor(0);app.indicador=Valor();app.abas_resultados=MagicMock()
             app.fila=queue.Queue();app.ocupado=False;app.mostrar=MagicMock();app.ultima_pasta=None
             for nome in ['consultar','escolher','campo_controle','campo_aba','progresso','abrir']:setattr(app,nome,MagicMock())
             result={'pasta':p,'controle':novo,'completa':False,'resumo':'Consulta com pendências'}

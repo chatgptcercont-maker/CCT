@@ -59,15 +59,20 @@ class AbrangenciaTests(unittest.TestCase):
         item = {'registro': dados['Registro'], 'arquivo': 'documentos/demo.pdf',
                 'fonte': online.URL, 'campos': dados}
         catalogo = []
+        progresso = []
         with tempfile.TemporaryDirectory() as tmp, patch.object(online, 'preparar_filtros'), \
                 patch.object(online, 'pesquisar', return_value=(1, 1, 1)), \
                 patch.object(online, 'salvar_instrumento', return_value=item) as salvar:
-            itens, pendencias, totais = online.coletar(browser, Path(tmp), date(2026, 10, 8), [], lambda m: None, catalogo=catalogo)
+            itens, pendencias, totais = online.coletar(browser, Path(tmp), date(2026, 10, 8), [], progresso.append, catalogo=catalogo)
         self.assertEqual(len(totais), 4)
         self.assertEqual(pendencias, [])
         self.assertEqual(len(itens), 1)
         self.assertEqual(len(catalogo), 1)
         salvar.assert_called_once()
+        contagens = [e for e in progresso if isinstance(e, dict)]
+        self.assertEqual(len([e for e in contagens if e['total'] is None]), 4)
+        self.assertEqual(len([e for e in contagens if e['examinados']==1]), 4)
+        self.assertTrue(all(e['examinados']<=e['total'] for e in contagens if e['total'] is not None))
 
 
 if __name__ == '__main__':
