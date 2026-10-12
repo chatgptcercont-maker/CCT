@@ -8,6 +8,7 @@ import tempfile
 import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
+from tkinter import font as tkfont
 
 from consulta_online import executar_online
 
@@ -34,7 +35,8 @@ def salvar_config(config):
 
 class Cartao(tk.Canvas):
     """Painel com borda discreta e cantos arredondados, sem dependências extras."""
-    def __init__(self, parent):
+    def __init__(self, parent, grupo=None):
+        self.grupo = grupo
         super().__init__(parent, background='#f3f4f3', highlightthickness=0, height=80)
         self.borda = self.create_polygon(0, 0, 1, 0, 1, 1, 0, 1, fill='white', outline='#dce5e0', smooth=True)
         self.conteudo = tk.Frame(self, background='white')
@@ -43,9 +45,11 @@ class Cartao(tk.Canvas):
         self.conteudo.bind('<Configure>', self.ajustar_altura)
 
     def ajustar_altura(self, event=None):
-        altura = self.conteudo.winfo_reqheight()+28
-        if int(self.cget('height')) != altura:
-            self.configure(height=altura)
+        cartoes = self.grupo if self.grupo else [self]
+        altura = max(c.conteudo.winfo_reqheight()+28 for c in cartoes)
+        for cartao in cartoes:
+            if int(cartao.cget('height')) != altura:
+                cartao.configure(height=altura)
 
     def redimensionar(self, event):
         w, h, r = event.width-1, event.height-1, 12
@@ -62,6 +66,8 @@ class Aplicacao:
         self.root.geometry(f'{largura}x{altura}')
         self.root.minsize(760, 500)
         self.root.configure(background='#f3f4f3')
+        familias = {f.lower() for f in tkfont.families(root)}
+        self.fonte = 'Garamond' if 'garamond' in familias else 'Times New Roman'
         self.configurar_estilo()
         self.fila = queue.Queue()
         self.ocupado = False
@@ -90,28 +96,28 @@ class Aplicacao:
         if self.logo is not None:
             tk.Label(marca, image=self.logo, background='white').pack()
         else:
-            tk.Label(marca, text='Cercont', background='white', foreground='#005952', font=('Segoe UI', 18, 'bold')).pack()
-            tk.Label(marca, text='Logo local não encontrada', background='white', foreground='#5d6864', font=('Segoe UI', 8)).pack()
+            tk.Label(marca, text='Cercont', background='white', foreground='#005952', font=(self.fonte, 21, 'bold')).pack()
+            tk.Label(marca, text='Logo local não encontrada', background='white', foreground='#5d6864', font=(self.fonte, 10)).pack()
         titulos = tk.Frame(cabecalho, background='#005952')
         titulos.pack(side='left', fill='x', expand=True)
-        tk.Label(titulos, text='DEPARTAMENTO PESSOAL', background='#005952', foreground='#cce5dc', font=('Segoe UI', 9, 'bold')).pack(anchor='w')
-        self.titulo = tk.Label(titulos, text='Monitor de Convenções e Aditivos', background='#005952', foreground='white', font=('Segoe UI', 18, 'bold'), justify='left', anchor='w')
+        tk.Label(titulos, text='DEPARTAMENTO PESSOAL', background='#005952', foreground='#cce5dc', font=(self.fonte, 11, 'bold')).pack(anchor='w')
+        self.titulo = tk.Label(titulos, text='Monitor de Convenções e Aditivos', background='#005952', foreground='white', font=(self.fonte, 21, 'bold'), justify='left', anchor='w')
         self.titulo.pack(anchor='w', pady=(4, 4), fill='x')
-        tk.Label(titulos, text='Alagoas e seus municípios · Sistema Mediador', background='#005952', foreground='#d9e7e4', font=('Segoe UI', 10)).pack(anchor='w')
+        tk.Label(titulos, text='Alagoas e seus municípios · Sistema Mediador', background='#005952', foreground='#d9e7e4', font=(self.fonte, 12)).pack(anchor='w')
         titulos.bind('<Configure>', lambda e: self.titulo.configure(wraplength=max(250,e.width)))
 
         corpo = tk.Frame(root, background='#f3f4f3')
         corpo.pack(fill='both', expand=True)
         lateral = tk.Frame(corpo, background='#00463f', width=154)
         lateral.pack(side='left', fill='y'); lateral.pack_propagate(False)
-        tk.Label(lateral, text='NAVEGAÇÃO', background='#00463f', foreground='#cce5dc', font=('Segoe UI', 8, 'bold')).pack(anchor='w', padx=18, pady=(24, 12))
+        tk.Label(lateral, text='NAVEGAÇÃO', background='#00463f', foreground='#cce5dc', font=(self.fonte, 10, 'bold')).pack(anchor='w', padx=18, pady=(24, 12))
         self.menu = {}
         for nome, icone in [('Início','⌂'), ('Consultas','≡'), ('Configurações','⚙'), ('Ajuda','?')]:
             botao = tk.Button(lateral, text=f'{icone}   {nome}', command=lambda n=nome: self.navegar(n),
                               background='#00463f', foreground='white', activebackground='#126f61', activeforeground='white',
-                              relief='flat', borderwidth=0, anchor='w', padx=16, pady=12, font=('Segoe UI', 10), cursor='hand2')
+                              relief='flat', borderwidth=0, anchor='w', padx=16, pady=12, font=(self.fonte, 12), cursor='hand2')
             botao.pack(fill='x', padx=8, pady=3); self.menu[nome] = botao
-        tk.Label(lateral, text='Execução manual\nSem agendamento', background='#00463f', foreground='#cce5dc', font=('Segoe UI', 9), justify='left').pack(side='bottom', anchor='w', padx=18, pady=20)
+        tk.Label(lateral, text='Execução manual\nSem agendamento', background='#00463f', foreground='#cce5dc', font=(self.fonte, 11), justify='left').pack(side='bottom', anchor='w', padx=18, pady=20)
 
         self.canvas = tk.Canvas(corpo, background='#f3f4f3', highlightthickness=0)
         rolagem = ttk.Scrollbar(corpo, command=self.canvas.yview)
@@ -128,7 +134,7 @@ class Aplicacao:
         for icone, titulo, descricao in [('✓','Fonte oficial','Sistema Mediador\nConvenções e aditivos'),
                                            ('⌖','Abrangência','Alagoas e todos os seus municípios'),
                                            ('▤','Controle','Planilha preservada\nHistórico mantido nas cópias')]:
-            cartao = Cartao(self.topo); self.cartoes.append(cartao)
+            cartao = Cartao(self.topo, grupo=self.cartoes); self.cartoes.append(cartao)
             ttk.Label(cartao.conteudo, text=f'{icone}  {titulo}', style='Title.TLabel').pack(anchor='w')
             texto = ttk.Label(cartao.conteudo, text=descricao, style='Muted.TLabel', wraplength=230, justify='left')
             texto.pack(anchor='w', pady=(6,0))
@@ -169,6 +175,8 @@ class Aplicacao:
                      'O programa obtém os documentos automaticamente.\n'
                      'No Windows, aguarde sem fechar a janela do Edge.\n'
                      'Bloqueios e documentos indisponíveis são registrados como pendências.')
+        if self.fonte != 'Garamond':
+            self.mostrar(self.texto.get('1.0', 'end-1c')+'\n\nGaramond não está instalada neste computador; usando Times New Roman.')
         self.abas_resultados.select(1)
         self.navegar('Início')
         root.protocol('WM_DELETE_WINDOW', self.fechar)
@@ -176,7 +184,7 @@ class Aplicacao:
 
     def criar_area_texto(self, notebook, titulo):
         painel = tk.Frame(notebook, background='white'); notebook.add(painel, text=titulo)
-        texto = tk.Text(painel, wrap='word', height=11, background='#f6f8f6', foreground='#303a37', font=('Segoe UI',10), relief='flat', padx=12, pady=10, spacing3=4, state='disabled')
+        texto = tk.Text(painel, wrap='word', height=11, background='#f6f8f6', foreground='#303a37', font=(self.fonte,12), relief='flat', padx=12, pady=10, spacing3=4, state='disabled')
         texto.pack(side='left', fill='both', expand=True)
         barra = ttk.Scrollbar(painel, command=texto.yview); barra.pack(side='right', fill='y'); texto.configure(yscrollcommand=barra.set)
         return texto
@@ -185,14 +193,14 @@ class Aplicacao:
         self.canvas.itemconfigure(self.pagina_id, width=event.width)
         largura = max(200,event.width-40)
         colunas = 3 if largura >= 840 else 1
-        for i in range(3): self.topo.columnconfigure(i, weight=1 if i<colunas else 0)
+        for i in range(3): self.topo.columnconfigure(i, weight=1 if i<colunas else 0, uniform='informativos' if i<colunas else '')
         for i, cartao in enumerate(self.cartoes):
-            cartao.grid(row=i//colunas, column=i%colunas, sticky='ew', padx=(0,10 if colunas>1 and i<2 else 0), pady=(0,8 if colunas==1 else 0))
+            cartao.grid(row=i//colunas, column=i%colunas, sticky='ew', padx=(5 if colunas>1 else 0), pady=(0,8 if colunas==1 else 0))
         duas = largura >= 650
-        self.campos.columnconfigure(0, weight=1)
-        self.campos.columnconfigure(1, weight=1 if duas else 0)
-        self.grupo_periodo.grid(row=0,column=0,sticky='ew',padx=(0,16 if duas else 0))
-        self.grupo_aba.grid(row=0 if duas else 1,column=1 if duas else 0,sticky='ew')
+        self.campos.columnconfigure(0, weight=1, uniform='campos')
+        self.campos.columnconfigure(1, weight=1 if duas else 0, uniform='campos' if duas else '')
+        self.grupo_periodo.grid(row=0,column=0,sticky='ew',padx=(0,8 if duas else 0))
+        self.grupo_aba.grid(row=0 if duas else 1,column=1 if duas else 0,sticky='ew',padx=(8 if duas else 0,0))
         self.auxiliar.configure(wraplength=largura-40)
         self.rotulo_status.configure(wraplength=largura-40)
 
@@ -233,22 +241,25 @@ class Aplicacao:
         self.indicador.set(f'Pesquisa atual · {percentual:.0f}% · {examinados} de {total} registros examinados')
 
     def configurar_estilo(self):
+        for nome in ('TkDefaultFont', 'TkTextFont', 'TkMenuFont', 'TkHeadingFont'):
+            tkfont.nametofont(nome, root=self.root).configure(family=self.fonte, size=12)
+        self.root.option_add('*TCombobox*Listbox.font', (self.fonte, 12))
         estilo = ttk.Style(self.root)
         estilo.theme_use('clam')
-        estilo.configure('.', font=('Segoe UI', 10))
+        estilo.configure('.', font=(self.fonte, 12))
         estilo.configure('App.TFrame', background='#f3f4f3')
         estilo.configure('Card.TFrame', background='white')
         estilo.configure('Card.TLabel', background='white', foreground='#303a37')
-        estilo.configure('Title.TLabel', background='white', foreground='#005952', font=('Segoe UI', 12, 'bold'))
-        estilo.configure('Muted.TLabel', background='white', foreground='#5d6864', font=('Segoe UI', 9))
+        estilo.configure('Title.TLabel', background='white', foreground='#005952', font=(self.fonte, 15, 'bold'))
+        estilo.configure('Muted.TLabel', background='white', foreground='#5d6864', font=(self.fonte, 11))
         estilo.configure('Status.TLabel', background='white', foreground='#005952')
-        estilo.configure('Footer.TLabel', background='#f3f4f3', foreground='#5d6864', font=('Segoe UI', 9))
+        estilo.configure('Footer.TLabel', background='#f3f4f3', foreground='#5d6864', font=(self.fonte, 11))
         estilo.configure('TEntry', padding=7, fieldbackground='white')
-        estilo.configure('TCombobox', padding=6, fieldbackground='white')
+        estilo.configure('TCombobox', padding=7, fieldbackground='white')
         estilo.map('TCombobox', fieldbackground=[('readonly', 'white')], foreground=[('readonly', '#303a37')])
         estilo.configure('TButton', padding=(12, 9), background='#e7eeeb', foreground='#303a37')
         estilo.map('TButton', background=[('active', '#d5e3dd')], foreground=[('disabled', '#788580')])
-        estilo.configure('Primary.TButton', padding=(20, 11), background='#005952', foreground='white', font=('Segoe UI', 11, 'bold'))
+        estilo.configure('Primary.TButton', padding=(16, 9), background='#005952', foreground='white', font=(self.fonte, 12, 'bold'))
         estilo.map('Primary.TButton', background=[('disabled', '#c9d9d3'), ('pressed', '#003e39'), ('active', '#006b62')],
                    foreground=[('disabled', '#5d6864'), ('!disabled', 'white')])
         estilo.configure('Query.Horizontal.TProgressbar', background='#005952', troughcolor='#e7eeeb', borderwidth=0, thickness=5)
