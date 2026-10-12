@@ -37,7 +37,7 @@ class Aplicacao:
         self.root.title('Monitor de Convenções e Aditivos — Alagoas | Cercont')
         self.root.geometry('980x740')
         self.root.minsize(860, 660)
-        self.root.configure(background='#eef2f6')
+        self.root.configure(background='#f3f4f3')
         self.configurar_estilo()
         self.fila = queue.Queue()
         self.ocupado = False
@@ -48,17 +48,38 @@ class Aplicacao:
         self.periodo = tk.StringVar(value=self.config.get('periodo', 'Ano de 2026'))
         self.status = tk.StringVar(value='Pronto para consultar a fonte oficial.')
 
-        cabecalho = tk.Frame(root, background='#142c46', padx=28, pady=20)
+        cabecalho = tk.Frame(root, background='white', padx=28, pady=16)
         cabecalho.pack(fill='x')
-        tk.Label(cabecalho, text='CERCONT  /  DEPARTAMENTO PESSOAL',
-                 background='#142c46', foreground='#8edbd0',
-                 font=('Segoe UI', 10, 'bold')).pack(anchor='w')
-        tk.Label(cabecalho, text='Monitor de Convenções e Aditivos',
-                 background='#142c46', foreground='white',
-                 font=('Segoe UI', 21, 'bold')).pack(anchor='w', pady=(7, 3))
-        tk.Label(cabecalho, text='Alagoas e seus municípios  •  Fonte oficial: Sistema Mediador',
-                 background='#142c46', foreground='#c5d4e4',
-                 font=('Segoe UI', 11)).pack(anchor='w')
+        marca = tk.Frame(cabecalho, background='white')
+        marca.pack(side='left', padx=(0, 24))
+        self.logo = None
+        caminho_logo = BASE / 'assets' / 'cercont.png'
+        if caminho_logo.is_file():
+            try:
+                original = tk.PhotoImage(master=root, file=str(caminho_logo))
+                fator = max(1, (original.width()+219)//220, (original.height()+89)//90)
+                self.logo = original.subsample(fator, fator)
+            except tk.TclError:
+                # Uma imagem inválida não impede a consulta nem afeta o controle.
+                self.logo = None
+        if self.logo is not None:
+            tk.Label(marca, image=self.logo, background='white').pack(anchor='w')
+        else:
+            tk.Label(marca, text='cercont', background='white', foreground='#005952',
+                     font=('Segoe UI', 25, 'bold')).pack(anchor='w')
+            tk.Label(marca, text='SOLUÇÕES CONTÁBEIS', background='white', foreground='#303a37',
+                     font=('Segoe UI', 9)).pack(anchor='w')
+        titulos = tk.Frame(cabecalho, background='white')
+        titulos.pack(side='left', fill='x', expand=True)
+        tk.Label(titulos, text='DEPARTAMENTO PESSOAL', background='white', foreground='#5d6864',
+                 font=('Segoe UI', 9, 'bold')).pack(anchor='w')
+        tk.Label(titulos, text='Monitor de Convenções e Aditivos',
+                 background='white', foreground='#005952',
+                 font=('Segoe UI', 17, 'bold')).pack(anchor='w', pady=(6, 3))
+        tk.Label(titulos, text='Alagoas e seus municípios  •  Sistema Mediador',
+                 background='white', foreground='#5d6864',
+                 font=('Segoe UI', 10)).pack(anchor='w')
+        tk.Frame(root, background='#005952', height=3).pack(fill='x')
 
         frame = ttk.Frame(root, padding=(24, 18, 24, 12), style='App.TFrame')
         frame.pack(fill='both', expand=True)
@@ -102,10 +123,10 @@ class Aplicacao:
         self.progresso.pack(fill='x', pady=(0, 10))
         painel = ttk.Frame(resultados, style='Card.TFrame')
         painel.pack(fill='both', expand=True)
-        self.texto = tk.Text(painel, wrap='word', height=10, background='#f7f9fc', foreground='#24364b',
+        self.texto = tk.Text(painel, wrap='word', height=10, background='#f6f8f6', foreground='#303a37',
                             font=('Segoe UI', 10), relief='flat', borderwidth=0,
                             padx=14, pady=12, spacing1=3, spacing3=5,
-                            selectbackground='#c7e9e4', selectforeground='#142c46')
+                            selectbackground='#cee7de', selectforeground='#005952')
         self.texto.pack(side='left', fill='both', expand=True)
         rolagem = ttk.Scrollbar(painel, command=self.texto.yview)
         rolagem.pack(side='right', fill='y')
@@ -124,22 +145,22 @@ class Aplicacao:
         estilo = ttk.Style(self.root)
         estilo.theme_use('clam')
         estilo.configure('.', font=('Segoe UI', 10))
-        estilo.configure('App.TFrame', background='#eef2f6')
+        estilo.configure('App.TFrame', background='#f3f4f3')
         estilo.configure('Card.TFrame', background='white')
-        estilo.configure('Card.TLabel', background='white', foreground='#24364b')
-        estilo.configure('Title.TLabel', background='white', foreground='#142c46', font=('Segoe UI', 12, 'bold'))
-        estilo.configure('Muted.TLabel', background='white', foreground='#526477', font=('Segoe UI', 9))
-        estilo.configure('Status.TLabel', background='white', foreground='#31556d')
-        estilo.configure('Footer.TLabel', background='#eef2f6', foreground='#526477', font=('Segoe UI', 9))
+        estilo.configure('Card.TLabel', background='white', foreground='#303a37')
+        estilo.configure('Title.TLabel', background='white', foreground='#005952', font=('Segoe UI', 12, 'bold'))
+        estilo.configure('Muted.TLabel', background='white', foreground='#5d6864', font=('Segoe UI', 9))
+        estilo.configure('Status.TLabel', background='white', foreground='#005952')
+        estilo.configure('Footer.TLabel', background='#f3f4f3', foreground='#5d6864', font=('Segoe UI', 9))
         estilo.configure('TEntry', padding=7, fieldbackground='white')
         estilo.configure('TCombobox', padding=6, fieldbackground='white')
-        estilo.map('TCombobox', fieldbackground=[('readonly', 'white')], foreground=[('readonly', '#24364b')])
-        estilo.configure('TButton', padding=(12, 9), background='#e5ecf3', foreground='#24364b')
-        estilo.map('TButton', background=[('active', '#d7e3ee')], foreground=[('disabled', '#768596')])
-        estilo.configure('Primary.TButton', padding=(20, 11), background='#087f73', foreground='white', font=('Segoe UI', 11, 'bold'))
-        estilo.map('Primary.TButton', background=[('disabled', '#c5d4d2'), ('pressed', '#055c54'), ('active', '#096c63')],
-                   foreground=[('disabled', '#526477'), ('!disabled', 'white')])
-        estilo.configure('Query.Horizontal.TProgressbar', background='#087f73', troughcolor='#e5ecf3', borderwidth=0, thickness=5)
+        estilo.map('TCombobox', fieldbackground=[('readonly', 'white')], foreground=[('readonly', '#303a37')])
+        estilo.configure('TButton', padding=(12, 9), background='#e7eeeb', foreground='#303a37')
+        estilo.map('TButton', background=[('active', '#d5e3dd')], foreground=[('disabled', '#788580')])
+        estilo.configure('Primary.TButton', padding=(20, 11), background='#005952', foreground='white', font=('Segoe UI', 11, 'bold'))
+        estilo.map('Primary.TButton', background=[('disabled', '#c9d9d3'), ('pressed', '#003e39'), ('active', '#006b62')],
+                   foreground=[('disabled', '#5d6864'), ('!disabled', 'white')])
+        estilo.configure('Query.Horizontal.TProgressbar', background='#005952', troughcolor='#e7eeeb', borderwidth=0, thickness=5)
 
     def mostrar(self, texto):
         self.texto.configure(state='normal'); self.texto.delete('1.0', 'end')
