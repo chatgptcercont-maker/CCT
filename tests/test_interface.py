@@ -21,7 +21,7 @@ class InterfaceTests(unittest.TestCase):
                 'AL000001/2025 | Convenção | registro em 31/12/2025 | fonte',
                 'Pendências: HTTP 403']
         resultado=ordenar_resultados('\n'.join(linhas)).splitlines()
-        self.assertEqual(resultado,[linhas[0],linhas[2],linhas[1],linhas[3],linhas[4]])
+        self.assertEqual(resultado,[linhas[0],linhas[3],linhas[1],linhas[2],linhas[4]])
         self.assertEqual(ordenar_resultados('Consulta com pendências.\nNenhum documento.'),'Consulta com pendências.\nNenhum documento.')
 
     def app_sem_tela(self):

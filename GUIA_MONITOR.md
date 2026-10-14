@@ -197,4 +197,4 @@ Para atualizar, substitua somente **preparar_monitor.py** e continue abrindo **a
 
 ## Ordem dos resultados no acompanhamento
 
-A aba **Resultados e pendências** apresenta os instrumentos por data de registro, do mais recente ao mais antigo, tanto no bloco de inclusões quanto no retorno completo. Títulos, totais e pendências permanecem nas suas posições. A aba de etapas mantém a ordem real da execução. A ordenação é apenas visual e não reorganiza as linhas da planilha de controle. Atualize somente `interface.py`. Os 60 testes passaram, incluindo datas de meses e anos diferentes.
+A aba **Resultados e pendências** apresenta os instrumentos por data de registro, do mais antigo ao mais recente, tanto no bloco de inclusões quanto no retorno completo. Títulos, totais e pendências permanecem nas suas posições. A aba de etapas mantém a ordem real da execução. A ordenação é apenas visual e não reorganiza as linhas da planilha de controle. Atualize somente `interface.py`. Os 60 testes passaram, incluindo datas de meses e anos diferentes.

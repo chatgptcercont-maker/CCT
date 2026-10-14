@@ -40,7 +40,7 @@ def ordenar_resultados(texto):
     linhas, bloco, saida = texto.splitlines(), [], []
     padrao = re.compile(r'^(' + REGEX_REGISTRO + r')\s*\|.*?registro em\s+(\d{2}/\d{2}/\d{4})\b')
     def descarregar():
-        saida.extend(linha for _, linha in sorted(bloco, key=lambda item: item[0], reverse=True))
+        saida.extend(linha for _, linha in sorted(bloco, key=lambda item: item[0]))
         bloco.clear()
     for linha in linhas:
         m = padrao.match(linha)
@@ -406,7 +406,7 @@ class Aplicacao:
                         self.registrar_etapa(self.status.get())
                         self.indicador.set('Execução encerrada · consulte o resultado e as pendências')
                         self.abas_resultados.select(1)
-                        self.mostrar('Instrumentos em ordem de registro: mais recentes primeiro.\n\n'+
+                        self.mostrar('Instrumentos em ordem de registro: mais antigos primeiro.\n\n'+
                                      ordenar_resultados(dado['resumo']+'\n'+dado.get('relatorio', ''))+
                                      '\nArquivos: '+str(dado['pasta']))
                         if dado['controle'].is_file():
