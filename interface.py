@@ -16,7 +16,7 @@ from monitor import REGEX_REGISTRO
 
 BASE = Path(__file__).resolve().parent
 CONFIG = BASE/'configuracao_monitor.json'
-VERSAO_INTERFACE = '2026.10.14 — Consultas no menu'
+VERSAO_INTERFACE = '2026.10.14 — Resumos na mesma janela'
 
 
 def carregar_config():
@@ -101,6 +101,9 @@ class Aplicacao:
         self.ocupado = False
         self.ultima_pasta = None
         self.dados_painel = None
+        self.painel_embutido = None
+        self.painel_dados = None
+        self.mostrando_consultas = False
         self.config = carregar_config()
         self.controle = tk.StringVar(value=self.config.get('controle', ''))
         self.aba = tk.StringVar(value=self.config.get('aba', ''))
@@ -137,6 +140,7 @@ class Aplicacao:
 
         corpo = tk.Frame(root, background='#f0f5f7')
         corpo.pack(fill='both', expand=True)
+        self.area_consultas = tk.Frame(corpo, background='#f0f5f7')
         lateral = tk.Frame(corpo, background='#033f38', width=154)
         lateral.pack(side='left', fill='y'); lateral.pack_propagate(False)
         tk.Label(lateral, text='NAVEGAÇÃO', background='#033f38', foreground='#cce5dc', font=(self.fonte, 10, 'bold')).pack(anchor='w', padx=18, pady=(24, 12))
@@ -150,6 +154,7 @@ class Aplicacao:
 
         self.canvas = tk.Canvas(corpo, background='#f0f5f7', highlightthickness=0)
         rolagem = ttk.Scrollbar(corpo, command=self.canvas.yview)
+        self.rolagem_principal = rolagem
         rolagem.pack(side='right', fill='y'); self.canvas.pack(side='left', fill='both', expand=True)
         self.canvas.configure(yscrollcommand=rolagem.set)
         self.pagina = tk.Frame(self.canvas, background='#f0f5f7', padx=20, pady=18)
@@ -268,6 +273,9 @@ class Aplicacao:
 
     def rolar_pagina(self, event):
         # A rolagem dos logs permanece independente da página.
+        if self.mostrando_consultas and self.painel_embutido:
+            self.painel_embutido.rolar(event)
+            return
         if isinstance(event.widget, tk.Text): return
         self.canvas.yview_scroll(-int(event.delta/120), 'units')
 
@@ -275,7 +283,8 @@ class Aplicacao:
         for item, botao in self.menu.items():
             botao.configure(background='#226c5c' if item==nome else '#033f38')
         if nome == 'Consultas':
-            self.exibir_painel()
+            if self.exibir_painel() is False:
+                self.navegar('Início')
             return
         if nome == 'Ajuda':
             messagebox.showinfo('Ajuda', 'Escolha o período e clique em Consultar novidades.\n'
@@ -286,6 +295,7 @@ class Aplicacao:
                 'Os resumos são abertos em Consultas, no menu esquerdo.\n'
                 'Versão: '+VERSAO_INTERFACE+'\nPasta do programa: '+str(BASE))
             return
+        self.mostrar_inicio()
         self.root.update_idletasks()
         alvo = self.card_filtros if nome=='Configurações' else None
         if alvo:
@@ -293,6 +303,13 @@ class Aplicacao:
             self.canvas.yview_moveto(alvo.winfo_y()/altura)
             if nome=='Configurações': self.campo_periodo.focus_set()
         else: self.canvas.yview_moveto(0)
+
+    def mostrar_inicio(self):
+        self.area_consultas.pack_forget()
+        self.rolagem_principal.pack(side='right', fill='y')
+        self.canvas.pack(side='left', fill='both', expand=True)
+        self.mostrando_consultas = False
+        self.titulo.configure(text='Monitor de Convenções e Aditivos')
 
     def registrar_etapa(self, mensagem):
         linha = datetime.now().astimezone().strftime('[%d/%m/%Y %H:%M:%S] ') + str(mensagem) + '\n'
@@ -455,7 +472,7 @@ class Aplicacao:
             if pasta is None:
                 pasta = filedialog.askdirectory(title='Selecionar uma consulta salva (saidas, execução ou resultado)', initialdir=BASE/'saidas')
             if not pasta:
-                return
+                return False
             try:
                 self.dados_painel = carregar_consulta(pasta)
                 self.ultima_pasta = Path(self.dados_painel.get('pasta', pasta))
@@ -467,14 +484,30 @@ class Aplicacao:
                     self.status.set('Painel aberto. Não foi possível guardar a última consulta para a próxima abertura.')
             except Exception as exc:
                 messagebox.showerror('Consulta salva indisponível', f'{type(exc).__name__}: {exc}')
-                return
-        from painel_resultados import PainelResultados
+                return False
         def voltar():
-            self.root.deiconify(); self.root.lift(); self.navegar('Início')
+            self.navegar('Início')
         try:
-            PainelResultados(self.root, self.dados_painel, Cartao, voltar)
+            from painel_resultados import PainelResultados
+            if not getattr(PainelResultados, 'EMBUTIDO', False):
+                raise RuntimeError('Atualize também painel_resultados.py para a versão com resumos na mesma janela')
+            if self.painel_embutido is None or self.painel_dados is not self.dados_painel:
+                if self.painel_embutido is not None:
+                    self.painel_embutido.root.destroy()
+                    self.painel_embutido = None
+                self.painel_embutido = PainelResultados(self.area_consultas, self.dados_painel, Cartao, voltar)
+                self.painel_dados = self.dados_painel
+            self.canvas.pack_forget()
+            self.rolagem_principal.pack_forget()
+            self.area_consultas.pack(side='left', fill='both', expand=True)
+            self.mostrando_consultas = True
+            self.titulo.configure(text='Consulta de Convenções Coletivas de Trabalho (CCT)')
+            for nome, botao in self.menu.items():
+                botao.configure(background='#226c5c' if nome=='Consultas' else '#033f38')
+            return True
         except Exception as exc:
             messagebox.showerror('Painel indisponível', f'{type(exc).__name__}: {exc}. Os relatórios continuam em Abrir resultados.')
+            return False
 
     def fechar(self):
         if self.ocupado:

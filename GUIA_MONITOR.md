@@ -151,7 +151,7 @@ Atualize somente `interface.py` e abra `abrir_monitor.bat`; não é necessário 
 
 ## Tela pós-consulta: painel documental
 
-Após a consulta, abre-se uma janela separada com identificação do instrumento, pesquisa nos documentos da execução, resumo executivo, alertas e seis seções detalhadas. A tela inicial, seus filtros, a abertura do Edge e o controle cumulativo permanecem disponíveis. **Nova consulta** retorna à tela inicial e não apaga execuções anteriores.
+Após a consulta, a área central da janela principal apresenta identificação do instrumento, pesquisa nos documentos da execução, resumo executivo, alertas e seis seções detalhadas. A tela inicial, seus filtros, a abertura do Edge e o controle cumulativo permanecem disponíveis. **Nova consulta** retorna à tela inicial e não apaga execuções anteriores.
 
 A opção **Consultas**, no menu lateral reabre os dados da execução atual. Se ainda não houver dados em memória, permite selecionar a pasta **resultado** de uma execução salva em `saidas/online_.../resultado`, sem fazer nova pesquisa na internet ou exigir PDFs preparados manualmente. A leitura histórica não troca o controle cumulativo selecionado. A pasta precisa manter os documentos e o manifesto interno original ao lado dos relatórios.
 
@@ -211,4 +211,10 @@ A ação de abrir o painel de resumos foi movida para **Consultas**, abaixo de I
 
 ## Conferir qual cópia está aberta
 
-A barra de título identifica **2026.10.14 — Consultas no menu**. Em **Ajuda**, aparecem a versão e a pasta real do programa. Nesta versão, o formulário tem somente Consultar novidades e Abrir resultados; os resumos são abertos pelo item Consultas do menu esquerdo. Se Ver painel ainda aparecer no formulário, confira a pasta indicada em Ajuda e atualize o `interface.py` nessa cópia. Feche o processo antigo antes de reabrir pelo BAT da mesma pasta. A identificação da versão não altera consultas, configurações ou históricos.
+A barra de título identifica **2026.10.14 — Resumos na mesma janela**. Em **Ajuda**, aparecem a versão e a pasta real do programa. Nesta versão, o formulário tem somente Consultar novidades e Abrir resultados; os resumos são abertos pelo item Consultas do menu esquerdo. Se Ver painel ainda aparecer no formulário, confira a pasta indicada em Ajuda e atualize o `interface.py` nessa cópia. Feche o processo antigo antes de reabrir pelo BAT da mesma pasta. A identificação da versão não altera consultas, configurações ou históricos.
+
+## Resumos dentro da janela principal
+
+A opção **Consultas** agora apresenta o painel documental na área central da mesma janela, mantendo o cabeçalho e o menu lateral. Não abre uma nova janela de resumos. **Início**, **Configurações** e **Nova consulta** retornam ao formulário, preservando seus campos e dados. Alternar entre Início e Consultas reutiliza o painel e mantém o documento selecionado, os filtros locais e as seções abertas. Uma nova execução atualiza os dados do painel. A rolagem acompanha a área ativa. Os diálogos específicos de cláusulas, seleção de arquivos e impressão permanecem disponíveis.
+
+Atualize **os dois arquivos: interface.py e painel_resultados.py**. Se o módulo do painel ainda for antigo, o programa informa qual arquivo precisa ser atualizado. A barra de título identifica **2026.10.14 — Resumos na mesma janela**. Foram executados **65 testes**, incluindo alternância de áreas, preservação dos campos, reutilização do painel e rolagem. Não foi possível conferir a aparência em Windows neste ambiente sem tela gráfica.

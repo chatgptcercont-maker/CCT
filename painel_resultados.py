@@ -1,4 +1,4 @@
-"""Painel documental pós-consulta, separado da tela de execução."""
+"""Painel documental integrado à área central da janela principal."""
 from pathlib import Path
 import os
 import tkinter as tk
@@ -9,28 +9,13 @@ import monitor
 
 
 class PainelResultados:
+    EMBUTIDO = True
+
     def __init__(self, parent, consulta, cartao, voltar):
         self.consulta=consulta; self.cartao=cartao; self.voltar=voltar
         self.doc=None; self.anterior=None; self.comparacao=None; self.abrindo=False
-        self.root=tk.Toplevel(parent)
-        self.root.title('Consulta de Convenções Coletivas de Trabalho (CCT) | Cercont')
-        self.root.geometry(f'{min(1180,parent.winfo_screenwidth()-70)}x{min(850,parent.winfo_screenheight()-100)}')
-        self.root.minsize(760,500);self.root.configure(background='#f0f5f7')
-        cab=tk.Frame(self.root,background='#064d47',padx=20,pady=16);cab.pack(fill='x')
-        self.logo=None
-        logo=Path(__file__).resolve().parent/'assets/cercont.png'
-        if logo.is_file():
-            try:
-                original=tk.PhotoImage(master=self.root,file=str(logo));n=max(1,(original.width()+159)//160,(original.height()+59)//60)
-                self.logo=original.subsample(n,n)
-                tk.Label(cab,image=self.logo,background='white').pack(side='left',padx=(0,20))
-            except tk.TclError:pass
-        titulos=tk.Frame(cab,background='#064d47');titulos.pack(side='left',fill='x',expand=True)
-        titulo=tk.Label(titulos,text='Consulta de Convenções Coletivas de Trabalho (CCT)',font=('Segoe UI',16,'bold'),background='#064d47',foreground='white',wraplength=820,justify='left')
-        titulo.pack(anchor='w',fill='x')
-        titulos.bind('<Configure>',lambda e:titulo.configure(wraplength=max(250,e.width)))
-        tk.Label(titulos,text='Departamento Pessoal · Cercont',background='#064d47',foreground='#d9e7e4',font=('Segoe UI',10)).pack(anchor='w',pady=(4,0))
-        tk.Label(cab,text='Referências documentais\nConferência pelo DP',background='#064d47',foreground='#d9e7e4',font=('Segoe UI',9),justify='right').pack(side='right')
+        self.root=tk.Frame(parent,background='#f0f5f7')
+        self.root.pack(fill='both',expand=True)
         busca=tk.Frame(self.root,background='white',padx=20,pady=12);busca.pack(fill='x')
         self.termo=tk.StringVar()
         ttk.Label(busca,text='Categoria, sindicato, município, CNPJ ou registro',style='Card.TLabel').pack(anchor='w')
@@ -39,7 +24,9 @@ class PainelResultados:
         self.campo_busca.bind('<Return>',lambda e:self.filtrar())
         ttk.Button(barra,text='Consultar',style='Primary.TButton',command=self.filtrar).pack(side='left',padx=8)
         ttk.Button(barra,text='Nova consulta',command=self.nova_consulta).pack(side='left')
-        ttk.Label(busca,text='A pesquisa acima filtra os documentos obtidos nesta execução. Nova consulta retorna aos filtros do Mediador.',style='Muted.TLabel',wraplength=900).pack(anchor='w',pady=(6,0))
+        orientacao=ttk.Label(busca,text='A pesquisa acima filtra os documentos obtidos nesta execução. Nova consulta retorna aos filtros do Mediador.',style='Muted.TLabel',wraplength=900,justify='left')
+        orientacao.pack(anchor='w',pady=(6,0))
+        busca.bind('<Configure>',lambda e:orientacao.configure(wraplength=max(200,e.width-40)))
         escolha=tk.Frame(self.root,background='#f0f5f7',padx=20,pady=10);escolha.pack(fill='x')
         self.selecionado=tk.StringVar()
         self.seletor=ttk.Combobox(escolha,textvariable=self.selecionado,state='readonly',width=70)
@@ -53,7 +40,6 @@ class PainelResultados:
         self.janela=self.canvas.create_window(0,0,window=self.conteudo,anchor='nw')
         self.canvas.bind('<Configure>',lambda e:self.canvas.itemconfigure(self.janela,width=e.width))
         self.conteudo.bind('<Configure>',lambda e:self.canvas.configure(scrollregion=self.canvas.bbox('all')))
-        self.root.bind('<MouseWheel>',self.rolar)
         self.filtrar()
 
     def rolar(self,event):
@@ -265,4 +251,4 @@ class PainelResultados:
             except OSError as exc:messagebox.showerror('Impressão não iniciada',str(exc),parent=self.root)
 
     def nova_consulta(self):
-        self.voltar();self.root.destroy()
+        self.voltar()

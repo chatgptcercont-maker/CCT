@@ -14,6 +14,28 @@ class Valor:
 
 
 class InterfaceTests(unittest.TestCase):
+    def test_consultas_embutidas_reutilizam_painel_e_preservam_inicio(self):
+        app=self.app_sem_tela();app.dados_painel={'documentos':[],'pendencias':[]}
+        app.controle=Valor('controle-original.xlsx')
+        with patch('painel_resultados.PainelResultados') as painel:
+            self.assertTrue(Aplicacao.exibir_painel(app))
+            self.assertIs(painel.call_args.args[0],app.area_consultas)
+            app.canvas.pack_forget.assert_called()
+            self.assertTrue(app.mostrando_consultas)
+            app.mostrar_inicio()
+            self.assertFalse(app.mostrando_consultas)
+            self.assertTrue(Aplicacao.exibir_painel(app))
+            painel.assert_called_once()
+            painel.return_value.root.destroy.assert_not_called()
+        self.assertEqual(app.controle.get(),'controle-original.xlsx')
+
+    def test_rolagem_vai_para_painel_ativo(self):
+        app=self.app_sem_tela();app.mostrando_consultas=True;app.painel_embutido=MagicMock()
+        evento=MagicMock()
+        app.rolar_pagina(evento)
+        app.painel_embutido.rolar.assert_called_once_with(evento)
+        app.canvas.yview_scroll.assert_not_called()
+
     def test_menu_consultas_abre_painel(self):
         app=self.app_sem_tela()
         app.menu={nome:MagicMock() for nome in ['Início','Consultas','Configurações','Ajuda']}
@@ -35,6 +57,8 @@ class InterfaceTests(unittest.TestCase):
     def app_sem_tela(self):
         app=Aplicacao.__new__(Aplicacao)
         app.root=MagicMock();app.logs=MagicMock();app.texto=MagicMock();app.config={}
+        app.area_consultas=MagicMock();app.canvas=MagicMock();app.rolagem_principal=MagicMock();app.titulo=MagicMock()
+        app.menu={};app.painel_embutido=None;app.painel_dados=None;app.mostrando_consultas=False
         app.percentual=Valor(0);app.indicador=Valor();app.status=Valor()
         app.fila=queue.Queue();app.ocupado=True;app.abas_resultados=MagicMock()
         app.campo_periodo=MagicMock();app.exibir_painel=MagicMock()

@@ -119,7 +119,7 @@ class ResultadosTests(unittest.TestCase):
 
     def test_nova_consulta_volta_sem_modificar_historico(self):
         painel=PainelResultados.__new__(PainelResultados);painel.root=MagicMock();painel.voltar=MagicMock()
-        painel.nova_consulta();painel.voltar.assert_called_once();painel.root.destroy.assert_called_once()
+        painel.nova_consulta();painel.voltar.assert_called_once();painel.root.destroy.assert_not_called()
 
     def test_clausula_continuada_mantem_as_paginas_reais(self):
         with tempfile.TemporaryDirectory() as tmp:
