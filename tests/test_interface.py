@@ -14,6 +14,14 @@ class Valor:
 
 
 class InterfaceTests(unittest.TestCase):
+    def test_menu_consultas_abre_painel(self):
+        app=self.app_sem_tela()
+        app.menu={nome:MagicMock() for nome in ['Início','Consultas','Configurações','Ajuda']}
+        app.navegar('Consultas')
+        app.exibir_painel.assert_called_once()
+        app.menu['Consultas'].configure.assert_called_with(background='#226c5c')
+        app.root.update_idletasks.assert_not_called()
+
     def test_resultados_ordenados_por_data_sem_mover_pendencias(self):
         linhas=['Novos instrumentos: 3',
                 'AL000002/2026 | Convenção | registro em 31/01/2026 | fonte',
@@ -29,7 +37,7 @@ class InterfaceTests(unittest.TestCase):
         app.root=MagicMock();app.logs=MagicMock();app.texto=MagicMock();app.config={}
         app.percentual=Valor(0);app.indicador=Valor();app.status=Valor()
         app.fila=queue.Queue();app.ocupado=True;app.abas_resultados=MagicMock()
-        app.campo_periodo=MagicMock();app.botao_painel=MagicMock();app.exibir_painel=MagicMock()
+        app.campo_periodo=MagicMock();app.exibir_painel=MagicMock()
         for nome in ['consultar','escolher','campo_controle','campo_aba','abrir']:
             setattr(app,nome,MagicMock())
         return app
@@ -101,7 +109,7 @@ class InterfaceTests(unittest.TestCase):
             app.root=MagicMock();app.config={};app.controle=Valor();app.aba=Valor();app.status=Valor()
             app.periodo=Valor('Ano de 2026');app.campo_periodo=MagicMock()
             app.logs=MagicMock();app.percentual=Valor(0);app.indicador=Valor();app.abas_resultados=MagicMock()
-            app.botao_painel=MagicMock();app.exibir_painel=MagicMock()
+            app.exibir_painel=MagicMock()
             app.fila=queue.Queue();app.ocupado=False;app.mostrar=MagicMock();app.ultima_pasta=None
             for nome in ['consultar','escolher','campo_controle','campo_aba','progresso','abrir']:setattr(app,nome,MagicMock())
             result={'pasta':p,'controle':novo,'completa':False,'resumo':'Consulta com pendências'}

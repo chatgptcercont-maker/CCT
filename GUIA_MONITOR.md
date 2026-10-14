@@ -153,7 +153,7 @@ Atualize somente `interface.py` e abra `abrir_monitor.bat`; não é necessário 
 
 Após a consulta, abre-se uma janela separada com identificação do instrumento, pesquisa nos documentos da execução, resumo executivo, alertas e seis seções detalhadas. A tela inicial, seus filtros, a abertura do Edge e o controle cumulativo permanecem disponíveis. **Nova consulta** retorna à tela inicial e não apaga execuções anteriores.
 
-O botão **Ver painel** reabre os dados da execução atual. Se ainda não houver dados em memória, permite selecionar a pasta **resultado** de uma execução salva em `saidas/online_.../resultado`, sem fazer nova pesquisa na internet ou exigir PDFs preparados manualmente. A leitura histórica não troca o controle cumulativo selecionado. A pasta precisa manter os documentos e o manifesto interno original ao lado dos relatórios.
+A opção **Consultas**, no menu lateral reabre os dados da execução atual. Se ainda não houver dados em memória, permite selecionar a pasta **resultado** de uma execução salva em `saidas/online_.../resultado`, sem fazer nova pesquisa na internet ou exigir PDFs preparados manualmente. A leitura histórica não troca o controle cumulativo selecionado. A pasta precisa manter os documentos e o manifesto interno original ao lado dos relatórios.
 
 A pesquisa por categoria, sindicato, município, CNPJ ou registro filtra somente os documentos efetivamente obtidos nessa execução. Não é um novo filtro enviado ao Mediador. Para pesquisar novamente a fonte oficial, use **Nova consulta** e os filtros reais da tela inicial. Documentos já existentes no controle também podem aparecer no painel.
 
@@ -179,7 +179,7 @@ O comparativo permite selecionar um PDF anterior para leitura local. Só é real
 
 Na instalação existente, feche o programa e copie os arquivos novos **analise_resultados.py** e **painel_resultados.py**, além de substituir **interface.py**. Preserve a logo local, a configuração, `.venv`, planilhas e pastas de resultados. Abra **abrir_monitor.bat**; não há nova preparação por CMD ou dependência adicional.
 
-Para verificar no Windows: abra **Ver painel**, selecione `resultado` de uma consulta salva, pesquise um registro, escolha o documento, expanda uma seção e abra sua cláusula e o PDF. Exporte o resumo para um arquivo novo. Confira os trechos e páginas com o PDF original. Teste **Nova consulta** e observe que o histórico e a planilha selecionada permanecem. Se não houver documentos disponíveis por bloqueio ou erro, o painel mostrará as pendências, sem simular resultados.
+Para verificar no Windows: abra **Consultas**, no menu lateral, selecione `resultado` de uma consulta salva, pesquise um registro, escolha o documento, expanda uma seção e abra sua cláusula e o PDF. Exporte o resumo para um arquivo novo. Confira os trechos e páginas com o PDF original. Teste **Nova consulta** e observe que o histórico e a planilha selecionada permanecem. Se não houver documentos disponíveis por bloqueio ou erro, o painel mostrará as pendências, sem simular resultados.
 
 ### Validação efetivamente realizada
 
@@ -201,6 +201,10 @@ A aba **Resultados e pendências** apresenta os instrumentos por data de registr
 
 ## Reabrir o painel depois de fechar o programa
 
-A última consulta passa a ser guardada na configuração local. Ao clicar em **Ver painel**, o programa procura essa consulta; para instalações anteriores, também reconhece o resultado pela planilha de controle selecionada e, como alternativa, pela execução mais recente em `saidas`. Se não encontrar, permite selecionar `saidas`, a pasta `online_DATA_HORA_ID` ou a subpasta `resultado`. Os três caminhos são normalizados antes de ler o manifesto e os PDFs. A reabertura não troca a planilha de controle nem executa nova consulta na internet.
+A última consulta passa a ser guardada na configuração local. Ao clicar em **Consultas**, no menu lateral, o programa procura essa consulta; para instalações anteriores, também reconhece o resultado pela planilha de controle selecionada e, como alternativa, pela execução mais recente em `saidas`. Se não encontrar, permite selecionar `saidas`, a pasta `online_DATA_HORA_ID` ou a subpasta `resultado`. Os três caminhos são normalizados antes de ler o manifesto e os PDFs. A reabertura não troca a planilha de controle nem executa nova consulta na internet.
 
 Mantenha a pasta da execução completa, com `coleta_automatica.json`, `documentos` e `resultado`. Nenhuma consulta ou resumo é inventado quando esses arquivos estiverem indisponíveis. Para atualizar, substitua **interface.py** e **analise_resultados.py**, preservando a configuração e todas as saídas. Foram executados **62 testes**, incluindo reabertura e recuperação dos resumos pelos três caminhos. Também foi validada offline a recuperação dos 24 documentos oficiais anteriores e do reajuste de 4,11% da AL000242/2026 pelos três caminhos. A conferência gráfica no Windows permanece necessária.
+
+## Acesso pelo menu Consultas
+
+A ação de abrir o painel de resumos foi movida para **Consultas**, abaixo de Início no menu esquerdo. O botão Ver painel foi removido do formulário. A recuperação automática da consulta salva e a abertura após a conclusão continuam funcionando. Atualize somente `interface.py`. Os 63 testes passaram, incluindo a ação do menu.

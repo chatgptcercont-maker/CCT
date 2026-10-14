@@ -191,7 +191,6 @@ class Aplicacao:
         botoes = tk.Frame(filtros, background='white'); botoes.pack(fill='x')
         self.consultar = ttk.Button(botoes, text='Consultar novidades', style='Primary.TButton', command=self.iniciar); self.consultar.pack(side='left')
         self.abrir = ttk.Button(botoes, text='Abrir resultados', command=self.abrir_resultados, state='disabled'); self.abrir.pack(side='left', padx=8)
-        self.botao_painel = ttk.Button(botoes, text='Ver painel', command=self.exibir_painel); self.botao_painel.pack(side='left')
         ttk.Label(filtros, text='Execução manual · sem agendamento', style='Muted.TLabel').pack(anchor='w', pady=(9,0))
 
         self.card_resultados = Cartao(self.pagina); self.card_resultados.pack(fill='x')
@@ -274,6 +273,9 @@ class Aplicacao:
     def navegar(self, nome):
         for item, botao in self.menu.items():
             botao.configure(background='#226c5c' if item==nome else '#033f38')
+        if nome == 'Consultas':
+            self.exibir_painel()
+            return
         if nome == 'Ajuda':
             messagebox.showinfo('Ajuda', 'Escolha o período e clique em Consultar novidades.\n'
                 'A planilha e sua aba são opcionais. O arquivo original é preservado.\n'
@@ -282,7 +284,7 @@ class Aplicacao:
                 'A logo original deve estar em assets/cercont.png.')
             return
         self.root.update_idletasks()
-        alvo = self.card_resultados if nome=='Consultas' else self.card_filtros if nome=='Configurações' else None
+        alvo = self.card_filtros if nome=='Configurações' else None
         if alvo:
             altura = max(1,self.pagina.winfo_height())
             self.canvas.yview_moveto(alvo.winfo_y()/altura)
@@ -402,7 +404,6 @@ class Aplicacao:
                         self.ultima_pasta = dado['pasta']; self.abrir.configure(state='normal')
                         self.config['ultima_consulta'] = str(dado['pasta'].resolve())
                         self.dados_painel = dado.get('dados_painel')
-                        self.botao_painel.configure(state='normal' if self.dados_painel else 'disabled')
                         self.status.set('Consulta concluída.' if dado['completa'] else 'Consulta com pendências. Confira o relatório e o log.')
                         self.registrar_etapa(self.status.get())
                         self.indicador.set('Execução encerrada · consulte o resultado e as pendências')
