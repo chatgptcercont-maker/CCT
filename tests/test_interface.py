@@ -38,7 +38,7 @@ class InterfaceTests(unittest.TestCase):
 
     def test_menu_consultas_abre_painel(self):
         app=self.app_sem_tela()
-        app.menu={nome:MagicMock() for nome in ['Início','Consultas','Configurações','Ajuda']}
+        app.menu={nome:MagicMock() for nome in ['Início','Consultas','Ajuda']}
         app.navegar('Consultas')
         app.exibir_painel.assert_called_once()
         app.menu['Consultas'].configure.assert_called_with(background='#226c5c')

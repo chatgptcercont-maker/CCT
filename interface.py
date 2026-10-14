@@ -145,7 +145,7 @@ class Aplicacao:
         lateral.pack(side='left', fill='y'); lateral.pack_propagate(False)
         tk.Label(lateral, text='NAVEGAÇÃO', background='#033f38', foreground='#cce5dc', font=(self.fonte, 10, 'bold')).pack(anchor='w', padx=18, pady=(24, 12))
         self.menu = {}
-        for nome, icone in [('Início','⌂'), ('Consultas','≡'), ('Configurações','⚙'), ('Ajuda','?')]:
+        for nome, icone in [('Início','⌂'), ('Consultas','≡'), ('Ajuda','?')]:
             botao = tk.Button(lateral, text=f'{icone}   {nome}', command=lambda n=nome: self.navegar(n),
                               background='#033f38', foreground='white', activebackground='#226c5c', activeforeground='white',
                               relief='flat', borderwidth=0, anchor='w', padx=16, pady=12, font=(self.fonte, 10), cursor='hand2')
@@ -297,12 +297,7 @@ class Aplicacao:
             return
         self.mostrar_inicio()
         self.root.update_idletasks()
-        alvo = self.card_filtros if nome=='Configurações' else None
-        if alvo:
-            altura = max(1,self.pagina.winfo_height())
-            self.canvas.yview_moveto(alvo.winfo_y()/altura)
-            if nome=='Configurações': self.campo_periodo.focus_set()
-        else: self.canvas.yview_moveto(0)
+        self.canvas.yview_moveto(0)
 
     def mostrar_inicio(self):
         self.area_consultas.pack_forget()
