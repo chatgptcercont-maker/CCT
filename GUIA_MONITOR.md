@@ -219,6 +219,6 @@ A opção **Consultas** agora apresenta o painel documental na área central da 
 
 Atualize **os dois arquivos: interface.py e painel_resultados.py**. Se o módulo do painel ainda for antigo, o programa informa qual arquivo precisa ser atualizado. A barra de título identifica **2026.10.14 — Resumos na mesma janela**. Foram executados **65 testes**, incluindo alternância de áreas, preservação dos campos, reutilização do painel e rolagem. Não foi possível conferir a aparência em Windows neste ambiente sem tela gráfica.
 
-## Lista de documentos em ordem alfabética
+## Lista de documentos por número de registro
 
-No painel Consultas, o seletor de documentos é ordenado por **categoria, de A a Z**, considerando acentos e maiúsculas de forma equivalente. O nome aparece junto ao registro e ao tipo. Categorias longas têm uma prévia na lista; a identificação completa permanece no cartão do documento. Categorias não localizadas ficam ao final. A ordenação também vale depois de pesquisar. Não modifica a ordem das planilhas nem a ordenação por data na tela inicial. Atualize **analise_resultados.py** e **painel_resultados.py**. Os 66 testes passaram.
+No painel Consultas, o seletor segue ordem crescente pelo número de registro: **AL000001, AL000002, AL000003**, e assim por diante. O registro aparece no início de cada opção; categoria e tipo continuam visíveis ao lado. Registros SRT ficam depois dos AL. A ordenação também vale após pesquisar. Não modifica planilhas nem a ordenação por data na tela inicial. Atualize **analise_resultados.py** e **painel_resultados.py**. Os 67 testes passaram.

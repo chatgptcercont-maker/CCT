@@ -58,13 +58,13 @@ class PainelResultados:
         return r
 
     def filtrar(self):
-        self.visiveis=analise.ordenar_por_categoria(analise.pesquisar(self.consulta['documentos'],self.termo.get()))
+        self.visiveis=analise.ordenar_por_registro(analise.pesquisar(self.consulta['documentos'],self.termo.get()))
         opcoes=[]
         for d in self.visiveis:
             categoria=d.get('categoria') or 'Categoria não localizada'
             nome=categoria[:60]+('…' if len(categoria)>60 else '')
             tipo='Aditivo de CCT' if 'Aditivo' in d['Tipo'] else 'CCT'
-            opcoes.append(nome+' · '+d['Registro']+' · '+tipo)
+            opcoes.append(d['Registro']+' · '+nome+' · '+tipo)
         self.seletor.configure(values=opcoes)
         self.contagem.set(f'{len(self.visiveis)} documento(s)')
         if self.visiveis:self.seletor.current(0)

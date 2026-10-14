@@ -227,6 +227,13 @@ def ordenar_por_categoria(documentos):
     return sorted(documentos,key=chave)
 
 
+def ordenar_por_registro(documentos):
+    def chave(doc):
+        m=re.fullmatch(r'([A-Z]+)(\d+)/(\d{4})',doc['Registro'])
+        return (m[1],int(m[2]),int(m[3])) if m else (doc['Registro'],0,0)
+    return sorted(documentos,key=chave)
+
+
 def comparar(atual, anterior):
     if atual['Registro']==anterior['Registro']:raise ValueError('Selecione um instrumento anterior diferente')
     if atual['Tipo']!='Convenção Coletiva de Trabalho' or anterior['Tipo']!='Convenção Coletiva de Trabalho':

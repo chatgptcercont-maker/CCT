@@ -35,6 +35,13 @@ Não classificar esta regra como assistencial.
 
 
 class ResultadosTests(unittest.TestCase):
+    def test_ordem_crescente_pelo_numero_do_registro(self):
+        docs=[{'Registro':'SRT00003/2026'},{'Registro':'AL000003/2026'},
+              {'Registro':'AL000001/2026'},{'Registro':'AL000002/2026'}]
+        ordenados=analise.ordenar_por_registro(docs)
+        self.assertEqual([d['Registro'] for d in ordenados],['AL000001/2026','AL000002/2026','AL000003/2026','SRT00003/2026'])
+        self.assertEqual(docs[0]['Registro'],'SRT00003/2026')
+
     def test_ordem_alfabetica_categoria_sem_acentos_e_sem_alterar_origem(self):
         docs=[{'categoria':'Zeladores','Registro':'AL000001/2026'},
               {'categoria':None,'Registro':'AL000002/2026'},
