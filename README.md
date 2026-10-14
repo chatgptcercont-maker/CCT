@@ -1,6 +1,6 @@
 # Hub de agentes — Cercont
 
-A abertura do programa apresenta um hub para escolher a ferramenta. O **Monitor de CCT — Alagoas** está disponível; **Conferência de Admissão** aguarda as regras que serão definidas pelo usuário e ainda não executa conferências.
+A abertura do programa apresenta um hub para escolher a ferramenta. **Recibo de Rescisão Avulsa** permite informar verbas e valores manualmente, conferir a prévia e gerar um PDF local; não calcula direitos rescisórios. O **Monitor de CCT — Alagoas** está disponível; **Conferência de Admissão** aguarda as regras que serão definidas pelo usuário e ainda não executa conferências.
 
 ## Monitor Diário de Convenções e Aditivos — Alagoas
 

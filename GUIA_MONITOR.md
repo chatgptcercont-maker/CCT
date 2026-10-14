@@ -240,3 +240,17 @@ A abertura por **abrir_monitor.bat** agora mostra o **Hub de agentes**, sem inic
 Para atualizar, acrescente **hub_agentes.py** e substitua **interface.py** na instalação atual. Continue abrindo **abrir_monitor.bat**; a preparação automática e a abertura sem manter CMD continuam funcionando. Não há novas dependências. A logo segue em `assets/cercont.png`.
 
 Os **72 testes locais** passaram, incluindo abertura e reutilização do monitor, entrada do módulo de admissão sem executar consultas, identificação de módulos e bloqueio de fechamento durante trabalho em andamento. Compilação e verificação do diff passaram. A aparência e a navegação completa ainda precisam de conferência no Windows, pois este ambiente não tem tela gráfica.
+
+## Recibo de Rescisão Avulsa — valores manuais
+
+No hub, escolha **Recibo de Rescisão Avulsa → Elaborar recibo**. Preencha as partes, local e data. CPF/CNPJ e datas de admissão/desligamento são opcionais no modelo inicial. O formato de CPF/CNPJ informado é conferido; não há consulta cadastral ou validação da identidade das partes.
+
+Adicione cada verba com descrição, valor em reais e tipo **Provento** ou **Desconto**. Exemplos de valores aceitos: `1.250,50`, `1250,50` e `1250.50`. O módulo apenas soma os itens informados usando Decimal, sem calcular saldo de salário, aviso prévio, férias, 13º, FGTS, tributos ou outros direitos. Verbas precisam de valor positivo; descontos que excedam proventos bloqueiam a emissão para conferência. Não são acrescentadas verbas automaticamente.
+
+Use **Conferir prévia** antes de **Gerar recibo PDF**. Escolha um arquivo novo: recibos existentes não são sobrescritos, e não é permitido exportar para uma planilha. **Abrir PDF** abre o documento gerado no aplicativo local. Há espaço para assinatura do recebedor e do responsável pelo pagamento. O texto não declara quitação geral e não substitui TRCT. A emissão, por si só, não comprova pagamento.
+
+Foi usado um **modelo genérico inicial**, pois o modelo específico da Cercont ainda não foi informado. Pode ser ajustado posteriormente. Não há assinatura digital, pagamento ou envio externo. Os campos ficam na memória durante a sessão e são mantidos ao voltar ao hub; ao fechar o sistema, o preenchimento não é salvo automaticamente. O PDF permanece na pasta escolhida. Não use dados reais em arquivos de teste ou no repositório.
+
+Para atualizar, substitua **hub_agentes.py** e acrescente **recibo_rescisao.py** e **modulo_rescisao.py** na mesma pasta. Continue abrindo **abrir_monitor.bat**, sem novas dependências ou comandos de preparação. Monitor de CCT e a entrada de Admissão continuam disponíveis.
+
+Foram executados **78 testes locais**, incluindo valores com centavos, totais sem erros de ponto flutuante, datas inconsistentes, entradas incompletas, recuperação do módulo na sessão e preservação de arquivos. Um PDF de teste com dados fictícios foi gerado e relido, confirmando o líquido de R$ 1.200,50. A aparência e as ações completas no Windows ainda precisam de conferência no computador do usuário. Nenhum recibo real foi emitido durante o desenvolvimento.

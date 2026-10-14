@@ -7,6 +7,9 @@ AGENTES = (
     {'id':'cct','nome':'Monitor de CCT','status':'Disponível',
      'descricao':'Convenções e aditivos com abrangência em Alagoas. Consulte novidades, confira resumos e preserve seu histórico.',
      'acao':'Abrir monitor'},
+    {'id':'rescisao','nome':'Recibo de Rescisão Avulsa','status':'Disponível · valores manuais',
+     'descricao':'Informe as partes, verbas e descontos já apurados. Confira a prévia e gere o recibo em PDF, sem cálculo de direitos rescisórios.',
+     'acao':'Elaborar recibo'},
     {'id':'admissao','nome':'Conferência de Admissão','status':'Aguardando definição das regras',
      'descricao':'Espaço reservado para conferir documentos e dados de admissão. Nenhuma conferência automática está implementada neste módulo.',
      'acao':'Ver módulo'},
@@ -70,6 +73,7 @@ class HubAgentes:
             'O Monitor de CCT já pode ser utilizado pelo hub.',style='Card.TLabel',wraplength=650,justify='left')
         texto.pack(fill='x',pady=(0,15));c.conteudo.bind('<Configure>',lambda e:texto.configure(wraplength=max(200,e.width)),add='+')
         ttk.Button(c.conteudo,text='Voltar ao hub',command=self.mostrar_inicio).pack(anchor='w')
+        self.rescisao=None
         root.protocol('WM_DELETE_WINDOW',self.fechar)
         self.mostrar_inicio()
 
@@ -81,10 +85,11 @@ class HubAgentes:
         colunas=2 if event.width>=850 else 1
         for i,c in enumerate(self.cards):
             self.grade.columnconfigure(i,weight=1 if i<colunas else 0,uniform='agentes' if i<colunas else '')
-            c.grid(row=i//colunas,column=i%colunas,sticky='ew',padx=(0,12 if colunas==2 and i==0 else 0),pady=(0,12))
+            c.grid(row=i//colunas,column=i%colunas,sticky='ew',padx=(6 if colunas==2 else 0),pady=(0,12))
 
     def ocultar_telas(self):
         self.home.pack_forget();self.admissao.pack_forget()
+        if self.rescisao is not None:self.rescisao.pack_forget()
         if self.tela_monitor is not None:self.tela_monitor.pack_forget()
 
     def mostrar_inicio(self):
@@ -103,10 +108,21 @@ class HubAgentes:
                 tela.destroy()
                 messagebox.showerror('Monitor indisponível',str(exc),parent=self.root)
                 return
+        if identificador=='rescisao' and self.rescisao is None:
+            from modulo_rescisao import ModuloRescisao
+            try:
+                self.modulo_rescisao=ModuloRescisao(self.root,self.mostrar_inicio)
+                self.rescisao=self.modulo_rescisao.root
+            except Exception as exc:
+                messagebox.showerror('Recibo indisponível',str(exc),parent=self.root)
+                return
         self.ocultar_telas()
         if identificador=='cct':
             self.tela_monitor.pack(fill='both',expand=True)
             self.root.title('Monitor de Convenções e Aditivos — Alagoas | Cercont')
+        elif identificador=='rescisao':
+            self.rescisao.pack(fill='both',expand=True)
+            self.root.title('Recibo de Rescisão Avulsa | Cercont — Valores manuais')
         else:
             self.admissao.pack(fill='both',expand=True)
             self.root.title('Conferência de Admissão | Cercont — Em preparação')

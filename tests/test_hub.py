@@ -6,7 +6,7 @@ from hub_agentes import HubAgentes
 class HubTests(unittest.TestCase):
     def hub(self):
         h=HubAgentes.__new__(HubAgentes)
-        h.root=MagicMock();h.home=MagicMock();h.admissao=MagicMock()
+        h.root=MagicMock();h.home=MagicMock();h.admissao=MagicMock();h.rescisao=MagicMock()
         h.monitor=None;h.tela_monitor=None;h.fabrica_monitor=MagicMock()
         return h
 
@@ -25,6 +25,19 @@ class HubTests(unittest.TestCase):
         h=self.hub();h.abrir('admissao')
         h.fabrica_monitor.assert_not_called();h.admissao.pack.assert_called_once()
         h.root.title.assert_called_with('Conferência de Admissão | Cercont — Em preparação')
+
+    def test_recibo_abre_modulo_sem_emitir_ou_calcular(self):
+        h=self.hub();h.abrir('rescisao')
+        h.fabrica_monitor.assert_not_called();h.rescisao.pack.assert_called_once()
+        h.root.title.assert_called_with('Recibo de Rescisão Avulsa | Cercont — Valores manuais')
+
+    def test_modulo_recibo_e_reutilizado_ao_voltar_ao_hub(self):
+        h=self.hub();h.rescisao=None
+        with patch('modulo_rescisao.ModuloRescisao') as modulo:
+            h.abrir('rescisao');instancia=h.modulo_rescisao
+            h.mostrar_inicio();h.abrir('rescisao')
+        modulo.assert_called_once()
+        self.assertIs(h.modulo_rescisao,instancia)
 
     def test_nao_fecha_durante_consulta(self):
         h=self.hub();h.monitor=MagicMock();h.monitor.ocupado=True
