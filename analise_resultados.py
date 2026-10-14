@@ -220,6 +220,13 @@ def pesquisar(documentos, termo):
             or (len(digitos)>=8 and any(digitos in re.sub(r'\D','',c) for c in d['cnpjs']))]
 
 
+def ordenar_por_categoria(documentos):
+    def chave(doc):
+        categoria=re.sub(r'\s+',' ',doc.get('categoria') or '').strip()
+        return (not bool(categoria),monitor.normalizar(categoria),doc['Registro'])
+    return sorted(documentos,key=chave)
+
+
 def comparar(atual, anterior):
     if atual['Registro']==anterior['Registro']:raise ValueError('Selecione um instrumento anterior diferente')
     if atual['Tipo']!='Convenção Coletiva de Trabalho' or anterior['Tipo']!='Convenção Coletiva de Trabalho':

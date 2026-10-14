@@ -35,6 +35,15 @@ Não classificar esta regra como assistencial.
 
 
 class ResultadosTests(unittest.TestCase):
+    def test_ordem_alfabetica_categoria_sem_acentos_e_sem_alterar_origem(self):
+        docs=[{'categoria':'Zeladores','Registro':'AL000001/2026'},
+              {'categoria':None,'Registro':'AL000002/2026'},
+              {'categoria':'Água e saneamento','Registro':'AL000003/2026'},
+              {'categoria':'Comércio','Registro':'AL000004/2026'}]
+        ordenados=analise.ordenar_por_categoria(docs)
+        self.assertEqual([d['Registro'] for d in ordenados],['AL000003/2026','AL000004/2026','AL000001/2026','AL000002/2026'])
+        self.assertEqual(docs[0]['categoria'],'Zeladores')
+
     def ler(self,base,texto=None,nome='documento.pdf'):
         p=base/nome;pdf_ficticio(p,texto or exemplo())
         return analise.ler_documento(p,hoje=date(2026,10,12))
