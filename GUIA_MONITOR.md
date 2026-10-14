@@ -230,3 +230,13 @@ O menu lateral agora contém somente **Início**, **Consultas** e **Ajuda**. A o
 As seções detalhadas, seu filtro e o comparativo foram retirados da tela. O painel agora apresenta identificação compacta e **Vigência**, **Reajuste salarial**, **Contribuições assistenciais dos empregados**, **Contribuições patronais** e **Outras contribuições**, incluindo valores, periodicidade e prazos localizados nas cláusulas. Contribuições sociais, sindicais, confederativas ou negociais permanecem com seus títulos próprios, sem serem tratadas como assistenciais. Destinação ambígua não é presumida.
 
 O acesso à cláusula integral, aos documentos, à exportação e às pendências foi mantido. Informações não confirmadas são sinalizadas. A exportação PDF acompanha o resumo simples e suas referências. Atualize **analise_resultados.py** e **painel_resultados.py**. Os **68 testes locais** passaram, incluindo valores e vencimentos em frases separadas. A aparência ainda precisa de conferência no Windows.
+
+## Hub de agentes da Cercont
+
+A abertura por **abrir_monitor.bat** agora mostra o **Hub de agentes**, sem iniciar consultas automaticamente. Escolha **Monitor de CCT** para entrar na ferramenta existente. No menu do monitor, **Hub de agentes** retorna à seleção; o módulo é reutilizado e mantém os filtros, resultados e dados da sessão. As consultas salvas, o controle cumulativo e a configuração continuam nos mesmos caminhos. O hub não permite fechar enquanto a consulta estiver em andamento.
+
+**Conferência de Admissão** está identificada como **Aguardando definição das regras**. Seu botão abre uma tela informativa, sem ler dados de empregados ou executar conferências fictícias. O usuário informou que ainda montará as regras; documentos de entrada, campos e relatório serão definidos antes de implementar esse módulo.
+
+Para atualizar, acrescente **hub_agentes.py** e substitua **interface.py** na instalação atual. Continue abrindo **abrir_monitor.bat**; a preparação automática e a abertura sem manter CMD continuam funcionando. Não há novas dependências. A logo segue em `assets/cercont.png`.
+
+Os **72 testes locais** passaram, incluindo abertura e reutilização do monitor, entrada do módulo de admissão sem executar consultas, identificação de módulos e bloqueio de fechamento durante trabalho em andamento. Compilação e verificação do diff passaram. A aparência e a navegação completa ainda precisam de conferência no Windows, pois este ambiente não tem tela gráfica.

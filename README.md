@@ -1,4 +1,8 @@
-# Monitor Diário de Convenções e Aditivos — Alagoas
+# Hub de agentes — Cercont
+
+A abertura do programa apresenta um hub para escolher a ferramenta. O **Monitor de CCT — Alagoas** está disponível; **Conferência de Admissão** aguarda as regras que serão definidas pelo usuário e ainda não executa conferências.
+
+## Monitor Diário de Convenções e Aditivos — Alagoas
 
 Ferramenta Python para o Departamento Pessoal da Cercont. A interface permite clicar em **Consultar novidades** para pesquisar o Mediador, obter documentos e atualizar uma nova cópia do controle, sem anexos ou arquivo de resultados preparado pelo usuário.
 

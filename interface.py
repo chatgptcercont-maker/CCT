@@ -86,8 +86,10 @@ class Cartao(tk.Canvas):
 
 
 class Aplicacao:
-    def __init__(self, root):
+    def __init__(self, root, container=None, ao_voltar=None):
         self.root = root
+        self.container = container if container is not None else root
+        self.ao_voltar = ao_voltar
         self.root.title('Monitor de Convenções e Aditivos — Alagoas | Cercont · '+VERSAO_INTERFACE)
         largura = min(1180, max(760, root.winfo_screenwidth()-80))
         altura = min(820, max(500, root.winfo_screenheight()-110))
@@ -112,7 +114,7 @@ class Aplicacao:
         self.percentual = tk.DoubleVar(value=0)
         self.indicador = tk.StringVar(value='Nenhuma consulta em andamento')
 
-        cabecalho = tk.Frame(root, background='#064d47', padx=22, pady=16)
+        cabecalho = tk.Frame(self.container, background='#064d47', padx=22, pady=16)
         cabecalho.pack(fill='x')
         marca = tk.Frame(cabecalho, background='white', padx=12, pady=6)
         marca.pack(side='left', padx=(0, 22))
@@ -138,14 +140,17 @@ class Aplicacao:
         tk.Label(titulos, text='Alagoas e seus municípios · Sistema Mediador', background='#064d47', foreground='#d9e7e4', font=(self.fonte, 10)).pack(anchor='w')
         titulos.bind('<Configure>', lambda e: self.titulo.configure(wraplength=max(250,e.width)))
 
-        corpo = tk.Frame(root, background='#f0f5f7')
+        corpo = tk.Frame(self.container, background='#f0f5f7')
         corpo.pack(fill='both', expand=True)
         self.area_consultas = tk.Frame(corpo, background='#f0f5f7')
         lateral = tk.Frame(corpo, background='#033f38', width=154)
         lateral.pack(side='left', fill='y'); lateral.pack_propagate(False)
         tk.Label(lateral, text='NAVEGAÇÃO', background='#033f38', foreground='#cce5dc', font=(self.fonte, 10, 'bold')).pack(anchor='w', padx=18, pady=(24, 12))
         self.menu = {}
-        for nome, icone in [('Início','⌂'), ('Consultas','≡'), ('Ajuda','?')]:
+        opcoes = [('Início','⌂'), ('Consultas','≡'), ('Ajuda','?')]
+        if ao_voltar:
+            opcoes.insert(0, ('Hub de agentes','←'))
+        for nome, icone in opcoes:
             botao = tk.Button(lateral, text=f'{icone}   {nome}', command=lambda n=nome: self.navegar(n),
                               background='#033f38', foreground='white', activebackground='#226c5c', activeforeground='white',
                               relief='flat', borderwidth=0, anchor='w', padx=16, pady=12, font=(self.fonte, 10), cursor='hand2')
@@ -214,7 +219,8 @@ class Aplicacao:
                      'Bloqueios e documentos indisponíveis são registrados como pendências.')
         self.abas_resultados.select(1)
         self.navegar('Início')
-        root.protocol('WM_DELETE_WINDOW', self.fechar)
+        if ao_voltar is None:
+            root.protocol('WM_DELETE_WINDOW', self.fechar)
         root.after(100, self.atualizar)
 
     def criar_icone(self, parent, tipo, escuro=False):
@@ -273,6 +279,8 @@ class Aplicacao:
 
     def rolar_pagina(self, event):
         # A rolagem dos logs permanece independente da página.
+        if getattr(self, 'ao_voltar', None) and not self.container.winfo_ismapped():
+            return
         if self.mostrando_consultas and self.painel_embutido:
             self.painel_embutido.rolar(event)
             return
@@ -282,6 +290,9 @@ class Aplicacao:
     def navegar(self, nome):
         for item, botao in self.menu.items():
             botao.configure(background='#226c5c' if item==nome else '#033f38')
+        if nome == 'Hub de agentes':
+            self.ao_voltar()
+            return
         if nome == 'Consultas':
             if self.exibir_painel() is False:
                 self.navegar('Início')
@@ -514,7 +525,8 @@ class Aplicacao:
 def main():
     root = tk.Tk()
     try:
-        Aplicacao(root)
+        from hub_agentes import HubAgentes
+        HubAgentes(root, Aplicacao, Cartao)
     except Exception as exc:
         messagebox.showerror('Não foi possível abrir o monitor', f'{type(exc).__name__}: {exc}')
         root.destroy(); return
