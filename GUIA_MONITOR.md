@@ -188,3 +188,9 @@ Foram executados **57 testes locais**, incluindo metadados, contribuições não
 Foi feita validação **offline com os 24 documentos oficiais já obtidos** na execução `online_20261009_042138_f937a507`: leitura, pesquisa e exportação. Na AL000242/2026 foram conferidas vigência documental de 01/01/2026 a 31/12/2027, cláusula TERCEIRA de reajuste (página 1, 4,11%) e cláusula TRIGÉSIMA NONA de taxa assistencial laboral (página 13). O PDF de resumo foi exportado e relido; hashes de todos os arquivos da execução original permaneceram iguais.
 
 Não houve nova consulta ao Mediador nesta alteração. O ambiente não possui tela gráfica e não é Windows; aparência, seleção visual, abertura pelo leitor PDF e impressão real precisam ser verificadas no computador do usuário. A leitura dos documentos anteriores não comprova a completude da busca ampliada por municípios nem resolve bloqueios HTTP 403.
+
+## Abertura sem console durante o uso
+
+No Windows, `preparar_monitor.py` abre a interface pelo `pythonw.exe` em processo independente. O CMD fica visível apenas durante a verificação ou preparação inicial e fecha ao iniciar o monitor. Não feche essa janela enquanto as dependências estiverem sendo instaladas. Se a preparação falhar, ela permanece aberta com a mensagem de erro. Erros do processo gráfico são registrados em um arquivo novo `saidas/inicializacao_DATA_HORA_ID.log`; as consultas mantêm seus logs próprios.
+
+Para atualizar, substitua somente **preparar_monitor.py** e continue abrindo **abrir_monitor.bat**. Os 59 testes passaram, incluindo abertura sem aguardar a interface e erro explícito quando pythonw não está disponível. O comportamento visual do console ainda precisa ser conferido no Windows real.

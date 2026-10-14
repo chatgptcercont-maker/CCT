@@ -1,8 +1,10 @@
 """Prepara a instalação local quando necessário e abre o monitor."""
 import hashlib
+from datetime import datetime
 from pathlib import Path
 import subprocess
 import sys
+import uuid
 
 
 def preparar(base):
@@ -31,11 +33,29 @@ def preparar(base):
     return python
 
 
+def abrir_interface(python, base):
+    if sys.platform != 'win32':
+        return subprocess.run([str(python), str(base/'interface.py')], cwd=base).returncode
+    pythonw = python.with_name('pythonw.exe')
+    if not pythonw.is_file():
+        raise RuntimeError('Python para abertura sem console não encontrado: pythonw.exe. Repare a instalação do Python.')
+    pasta = base/'saidas'
+    pasta.mkdir(parents=True, exist_ok=True)
+    log = pasta/('inicializacao_'+datetime.now().strftime('%Y%m%d_%H%M%S')+'_'+uuid.uuid4().hex[:8]+'.log')
+    # pythonw não abre console. O processo independente permite encerrar o BAT
+    # sem encerrar o monitor. Erros de inicialização ficam em um arquivo novo.
+    with log.open('xb') as arquivo:
+        subprocess.Popen([str(pythonw), str(base/'interface.py')], cwd=base,
+                         stdin=subprocess.DEVNULL, stdout=arquivo, stderr=arquivo,
+                         creationflags=0x00000008 | 0x00000200)  # DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
+    return 0
+
+
 def main():
     base = Path(__file__).resolve().parent
     try:
         python = preparar(base)
-        return subprocess.run([str(python), str(base / 'interface.py')], cwd=base).returncode
+        return abrir_interface(python, base)
     except (OSError, RuntimeError, subprocess.CalledProcessError) as exc:
         print('\nNão foi possível preparar ou abrir o monitor.', flush=True)
         print(f'Detalhe: {exc}', flush=True)
