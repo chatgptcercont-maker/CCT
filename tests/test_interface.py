@@ -26,7 +26,7 @@ class InterfaceTests(unittest.TestCase):
 
     def app_sem_tela(self):
         app=Aplicacao.__new__(Aplicacao)
-        app.root=MagicMock();app.logs=MagicMock();app.texto=MagicMock()
+        app.root=MagicMock();app.logs=MagicMock();app.texto=MagicMock();app.config={}
         app.percentual=Valor(0);app.indicador=Valor();app.status=Valor()
         app.fila=queue.Queue();app.ocupado=True;app.abas_resultados=MagicMock()
         app.campo_periodo=MagicMock();app.botao_painel=MagicMock();app.exibir_painel=MagicMock()
@@ -72,12 +72,27 @@ class InterfaceTests(unittest.TestCase):
         app=self.app_sem_tela();app.dados_painel=None;app.controle=Valor('controle-original.xlsx')
         dados={'documentos':[],'pendencias':[],'completa':False,'consultada_em':'Não confirmado'}
         with patch('interface.filedialog.askdirectory',return_value='consulta/resultado'), \
+                patch('analise_resultados.localizar_consulta',side_effect=ValueError('Sem consulta')), \
+                patch('interface.salvar_config'), \
                 patch('analise_resultados.carregar_consulta',return_value=dados) as carregar, \
                 patch('painel_resultados.PainelResultados') as painel:
             Aplicacao.exibir_painel(app)
         carregar.assert_called_once_with('consulta/resultado')
         painel.assert_called_once()
         self.assertEqual(app.controle.get(),'controle-original.xlsx')
+
+    def test_reabertura_recupera_ultima_consulta_sem_pedir_pasta(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            pasta=Path(tmp)/'online_20261014_120000_id';(pasta/'resultado').mkdir(parents=True)
+            (pasta/'coleta_automatica.json').write_text('{"consulta_completa":false,"instrumentos":[]}')
+            app=self.app_sem_tela();app.dados_painel=None;app.controle=Valor('controle-original.xlsx')
+            app.config={'ultima_consulta':str(pasta/'resultado')}
+            with patch('interface.filedialog.askdirectory') as escolher,patch('interface.salvar_config') as salvar, \
+                    patch('painel_resultados.PainelResultados') as painel:
+                Aplicacao.exibir_painel(app)
+            escolher.assert_not_called();painel.assert_called_once();salvar.assert_called_once()
+            self.assertEqual(app.dados_painel['pasta'],str(pasta/'resultado'))
+            self.assertEqual(app.controle.get(),'controle-original.xlsx')
 
     def test_botao_chama_online_sem_anexos_e_guarda_controle_cumulativo(self):
         with tempfile.TemporaryDirectory() as tmp:

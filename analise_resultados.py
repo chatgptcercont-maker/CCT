@@ -166,8 +166,24 @@ def pontos_resumo(clausula, reajuste=False):
     return pontos
 
 
+def localizar_consulta(pasta):
+    """Aceita resultado, pasta da execução ou raiz de saídas, sem recursão ampla."""
+    pasta=Path(pasta).resolve()
+    if pasta.name=='resultado' and (pasta.parent/'coleta_automatica.json').is_file():
+        return pasta
+    if (pasta/'coleta_automatica.json').is_file() and (pasta/'resultado').is_dir():
+        return pasta/'resultado'
+    if pasta.is_dir():
+        candidatas=sorted((p/'resultado' for p in pasta.glob('online_*')
+                           if p.is_dir() and (p/'coleta_automatica.json').is_file() and (p/'resultado').is_dir()),
+                          key=lambda p:p.parent.name,reverse=True)
+        if candidatas:return candidatas[0]
+    raise ValueError('Nenhuma consulta salva encontrada. Selecione saidas, a pasta online_DATA_HORA ou sua pasta resultado. '
+                     'Mantenha o arquivo coleta_automatica.json e a pasta documentos da execução.')
+
+
 def carregar_consulta(pasta_resultado):
-    pasta=Path(pasta_resultado).resolve()
+    pasta=localizar_consulta(pasta_resultado)
     raiz=pasta.parent
     manifest=json.loads((raiz/'coleta_automatica.json').read_text(encoding='utf-8'))
     documentos,pendencias=[],[]

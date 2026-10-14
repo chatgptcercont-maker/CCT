@@ -400,6 +400,7 @@ class Aplicacao:
                         self.registrar_etapa(dado); self.indicador.set('Execução interrompida · consulta não confirmada')
                     else:
                         self.ultima_pasta = dado['pasta']; self.abrir.configure(state='normal')
+                        self.config['ultima_consulta'] = str(dado['pasta'].resolve())
                         self.dados_painel = dado.get('dados_painel')
                         self.botao_painel.configure(state='normal' if self.dados_painel else 'disabled')
                         self.status.set('Consulta concluída.' if dado['completa'] else 'Consulta com pendências. Confira o relatório e o log.')
@@ -432,14 +433,36 @@ class Aplicacao:
 
     def exibir_painel(self):
         if not self.dados_painel:
-            pasta = filedialog.askdirectory(title='Selecionar a pasta resultado de uma consulta salva', initialdir=BASE/'saidas')
+            from analise_resultados import localizar_consulta, carregar_consulta
+            pasta = None
+            controle = self.controle.get().strip()
+            candidatas = [self.config.get('ultima_consulta')]
+            if controle and Path(controle).parent.name == 'resultado':
+                candidatas.append(Path(controle).parent)
+            candidatas.append(BASE/'saidas')
+            for candidata in candidatas:
+                if not candidata:
+                    continue
+                try:
+                    pasta = localizar_consulta(candidata)
+                    break
+                except (ValueError, OSError):
+                    continue
+            if pasta is None:
+                pasta = filedialog.askdirectory(title='Selecionar uma consulta salva (saidas, execução ou resultado)', initialdir=BASE/'saidas')
             if not pasta:
                 return
             try:
-                from analise_resultados import carregar_consulta
                 self.dados_painel = carregar_consulta(pasta)
+                self.ultima_pasta = Path(self.dados_painel.get('pasta', pasta))
+                self.abrir.configure(state='normal')
+                self.config['ultima_consulta'] = str(self.ultima_pasta.resolve())
+                try:
+                    salvar_config(self.config)
+                except OSError:
+                    self.status.set('Painel aberto. Não foi possível guardar a última consulta para a próxima abertura.')
             except Exception as exc:
-                messagebox.showerror('Consulta salva indisponível', f'{type(exc).__name__}: {exc}. Escolha a pasta resultado que contém os relatórios de uma execução.')
+                messagebox.showerror('Consulta salva indisponível', f'{type(exc).__name__}: {exc}')
                 return
         from painel_resultados import PainelResultados
         def voltar():

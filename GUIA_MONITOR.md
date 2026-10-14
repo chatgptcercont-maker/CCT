@@ -198,3 +198,9 @@ Para atualizar, substitua somente **preparar_monitor.py** e continue abrindo **a
 ## Ordem dos resultados no acompanhamento
 
 A aba **Resultados e pendências** apresenta os instrumentos por data de registro, do mais antigo ao mais recente, tanto no bloco de inclusões quanto no retorno completo. Títulos, totais e pendências permanecem nas suas posições. A aba de etapas mantém a ordem real da execução. A ordenação é apenas visual e não reorganiza as linhas da planilha de controle. Atualize somente `interface.py`. Os 60 testes passaram, incluindo datas de meses e anos diferentes.
+
+## Reabrir o painel depois de fechar o programa
+
+A última consulta passa a ser guardada na configuração local. Ao clicar em **Ver painel**, o programa procura essa consulta; para instalações anteriores, também reconhece o resultado pela planilha de controle selecionada e, como alternativa, pela execução mais recente em `saidas`. Se não encontrar, permite selecionar `saidas`, a pasta `online_DATA_HORA_ID` ou a subpasta `resultado`. Os três caminhos são normalizados antes de ler o manifesto e os PDFs. A reabertura não troca a planilha de controle nem executa nova consulta na internet.
+
+Mantenha a pasta da execução completa, com `coleta_automatica.json`, `documentos` e `resultado`. Nenhuma consulta ou resumo é inventado quando esses arquivos estiverem indisponíveis. Para atualizar, substitua **interface.py** e **analise_resultados.py**, preservando a configuração e todas as saídas. Foram executados **62 testes**, incluindo reabertura e recuperação dos resumos pelos três caminhos. Também foi validada offline a recuperação dos 24 documentos oficiais anteriores e do reajuste de 4,11% da AL000242/2026 pelos três caminhos. A conferência gráfica no Windows permanece necessária.

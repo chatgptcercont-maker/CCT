@@ -154,5 +154,20 @@ class ResultadosTests(unittest.TestCase):
             c=analise.carregar_consulta(raiz/'resultado')
             self.assertEqual(c['documentos'][0]['aditivos_relacionados'],['AL000002/2026'])
 
+    def test_consulta_salva_carrega_resumos_pela_raiz_execucao_ou_resultado(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            saidas=Path(tmp);raiz=saidas/'online_20261014_120000_id'
+            (raiz/'documentos').mkdir(parents=True);(raiz/'resultado').mkdir()
+            d=self.ler(raiz/'documentos');antes=Path(d['caminho']).read_bytes()
+            m={'consulta_completa':True,'instrumentos':[{'registro':d['Registro'],'arquivo':'documentos/documento.pdf'}]}
+            (raiz/'coleta_automatica.json').write_text(json.dumps(m))
+            for pasta in [saidas,raiz,raiz/'resultado']:
+                c=analise.carregar_consulta(pasta)
+                self.assertEqual(len(c['documentos']),1)
+                resumo=analise.resumo_executivo(c['documentos'][0])
+                self.assertIn('5%',resumo['Reajuste salarial'][0]['texto'])
+                self.assertEqual(c['pasta'],str(raiz/'resultado'))
+            self.assertEqual(Path(d['caminho']).read_bytes(),antes)
+
 
 if __name__=='__main__':unittest.main()
