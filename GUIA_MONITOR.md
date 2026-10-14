@@ -208,3 +208,7 @@ Mantenha a pasta da execução completa, com `coleta_automatica.json`, `document
 ## Acesso pelo menu Consultas
 
 A ação de abrir o painel de resumos foi movida para **Consultas**, abaixo de Início no menu esquerdo. O botão Ver painel foi removido do formulário. A recuperação automática da consulta salva e a abertura após a conclusão continuam funcionando. Atualize somente `interface.py`. Os 63 testes passaram, incluindo a ação do menu.
+
+## Conferir qual cópia está aberta
+
+A barra de título identifica **2026.10.14 — Consultas no menu**. Em **Ajuda**, aparecem a versão e a pasta real do programa. Nesta versão, o formulário tem somente Consultar novidades e Abrir resultados; os resumos são abertos pelo item Consultas do menu esquerdo. Se Ver painel ainda aparecer no formulário, confira a pasta indicada em Ajuda e atualize o `interface.py` nessa cópia. Feche o processo antigo antes de reabrir pelo BAT da mesma pasta. A identificação da versão não altera consultas, configurações ou históricos.

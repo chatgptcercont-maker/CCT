@@ -16,6 +16,7 @@ from monitor import REGEX_REGISTRO
 
 BASE = Path(__file__).resolve().parent
 CONFIG = BASE/'configuracao_monitor.json'
+VERSAO_INTERFACE = '2026.10.14 — Consultas no menu'
 
 
 def carregar_config():
@@ -87,7 +88,7 @@ class Cartao(tk.Canvas):
 class Aplicacao:
     def __init__(self, root):
         self.root = root
-        self.root.title('Monitor de Convenções e Aditivos — Alagoas | Cercont')
+        self.root.title('Monitor de Convenções e Aditivos — Alagoas | Cercont · '+VERSAO_INTERFACE)
         largura = min(1180, max(760, root.winfo_screenwidth()-80))
         altura = min(820, max(500, root.winfo_screenheight()-110))
         self.root.geometry(f'{largura}x{altura}')
@@ -281,7 +282,9 @@ class Aplicacao:
                 'A planilha e sua aba são opcionais. O arquivo original é preservado.\n'
                 'A barra mede registros examinados na pesquisa atual, não o sucesso dos documentos.\n'
                 'Se houver pendências, confira o relatório e o log em Abrir resultados.\n'
-                'A logo original deve estar em assets/cercont.png.')
+                'A logo original deve estar em assets/cercont.png.\n\n'
+                'Os resumos são abertos em Consultas, no menu esquerdo.\n'
+                'Versão: '+VERSAO_INTERFACE+'\nPasta do programa: '+str(BASE))
             return
         self.root.update_idletasks()
         alvo = self.card_filtros if nome=='Configurações' else None
