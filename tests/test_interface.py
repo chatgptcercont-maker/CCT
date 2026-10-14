@@ -4,7 +4,7 @@ import tempfile
 from types import SimpleNamespace
 import unittest
 from unittest.mock import MagicMock, patch
-from interface import Aplicacao
+from interface import Aplicacao, ordenar_resultados
 
 
 class Valor:
@@ -14,6 +14,16 @@ class Valor:
 
 
 class InterfaceTests(unittest.TestCase):
+    def test_resultados_ordenados_por_data_sem_mover_pendencias(self):
+        linhas=['Novos instrumentos: 3',
+                'AL000002/2026 | Convenção | registro em 31/01/2026 | fonte',
+                'SRT00001/2026 | Aditivo | registro em 02/10/2026 | fonte',
+                'AL000001/2025 | Convenção | registro em 31/12/2025 | fonte',
+                'Pendências: HTTP 403']
+        resultado=ordenar_resultados('\n'.join(linhas)).splitlines()
+        self.assertEqual(resultado,[linhas[0],linhas[2],linhas[1],linhas[3],linhas[4]])
+        self.assertEqual(ordenar_resultados('Consulta com pendências.\nNenhum documento.'),'Consulta com pendências.\nNenhum documento.')
+
     def app_sem_tela(self):
         app=Aplicacao.__new__(Aplicacao)
         app.root=MagicMock();app.logs=MagicMock();app.texto=MagicMock()

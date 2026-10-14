@@ -4,6 +4,7 @@ from datetime import datetime
 import os
 from pathlib import Path
 import queue
+import re
 import tempfile
 import threading
 import tkinter as tk
@@ -11,6 +12,7 @@ from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
 
 from consulta_online import executar_online
+from monitor import REGEX_REGISTRO
 
 BASE = Path(__file__).resolve().parent
 CONFIG = BASE/'configuracao_monitor.json'
@@ -31,6 +33,27 @@ def salvar_config(config):
         json.dump(config, f, ensure_ascii=False, indent=2)
         temporario = Path(f.name)
     os.replace(temporario, CONFIG)
+
+
+def ordenar_resultados(texto):
+    """Ordena os blocos de instrumentos sem mover títulos ou pendências."""
+    linhas, bloco, saida = texto.splitlines(), [], []
+    padrao = re.compile(r'^(' + REGEX_REGISTRO + r')\s*\|.*?registro em\s+(\d{2}/\d{2}/\d{4})\b')
+    def descarregar():
+        saida.extend(linha for _, linha in sorted(bloco, key=lambda item: item[0], reverse=True))
+        bloco.clear()
+    for linha in linhas:
+        m = padrao.match(linha)
+        if m:
+            try:
+                bloco.append(((datetime.strptime(m[2], '%d/%m/%Y'), m[1]), linha))
+                continue
+            except ValueError:
+                pass
+        descarregar()
+        saida.append(linha)
+    descarregar()
+    return '\n'.join(saida)
 
 
 class Cartao(tk.Canvas):
@@ -383,7 +406,9 @@ class Aplicacao:
                         self.registrar_etapa(self.status.get())
                         self.indicador.set('Execução encerrada · consulte o resultado e as pendências')
                         self.abas_resultados.select(1)
-                        self.mostrar(dado['resumo']+'\n'+dado.get('relatorio', '')+'\nArquivos: '+str(dado['pasta']))
+                        self.mostrar('Instrumentos em ordem de registro: mais recentes primeiro.\n\n'+
+                                     ordenar_resultados(dado['resumo']+'\n'+dado.get('relatorio', ''))+
+                                     '\nArquivos: '+str(dado['pasta']))
                         if dado['controle'].is_file():
                             # A próxima execução compara com a cópia cumulativa, sem tocar no original.
                             self.controle.set(str(dado['controle'].resolve()))

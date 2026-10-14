@@ -194,3 +194,7 @@ Não houve nova consulta ao Mediador nesta alteração. O ambiente não possui t
 No Windows, `preparar_monitor.py` abre a interface pelo `pythonw.exe` em processo independente. O CMD fica visível apenas durante a verificação ou preparação inicial e fecha ao iniciar o monitor. Não feche essa janela enquanto as dependências estiverem sendo instaladas. Se a preparação falhar, ela permanece aberta com a mensagem de erro. Erros do processo gráfico são registrados em um arquivo novo `saidas/inicializacao_DATA_HORA_ID.log`; as consultas mantêm seus logs próprios.
 
 Para atualizar, substitua somente **preparar_monitor.py** e continue abrindo **abrir_monitor.bat**. Os 59 testes passaram, incluindo abertura sem aguardar a interface e erro explícito quando pythonw não está disponível. O comportamento visual do console ainda precisa ser conferido no Windows real.
+
+## Ordem dos resultados no acompanhamento
+
+A aba **Resultados e pendências** apresenta os instrumentos por data de registro, do mais recente ao mais antigo, tanto no bloco de inclusões quanto no retorno completo. Títulos, totais e pendências permanecem nas suas posições. A aba de etapas mantém a ordem real da execução. A ordenação é apenas visual e não reorganiza as linhas da planilha de controle. Atualize somente `interface.py`. Os 60 testes passaram, incluindo datas de meses e anos diferentes.
