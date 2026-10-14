@@ -224,3 +224,9 @@ Atualize **os dois arquivos: interface.py e painel_resultados.py**. Se o módulo
 No painel Consultas, o seletor segue ordem crescente pelo número de registro: **AL000001, AL000002, AL000003**, e assim por diante. O registro aparece no início de cada opção; categoria e tipo continuam visíveis ao lado. Registros SRT ficam depois dos AL. A ordenação também vale após pesquisar. Não modifica planilhas nem a ordenação por data na tela inicial. Atualize **analise_resultados.py** e **painel_resultados.py**. Os 67 testes passaram.
 
 O menu lateral agora contém somente **Início**, **Consultas** e **Ajuda**. A opção Configurações foi removida; os campos de consulta permanecem na tela inicial. Para atualizar, substitua somente `interface.py`. Os 67 testes passaram.
+
+## Resumo simples na aba Consultas
+
+As seções detalhadas, seu filtro e o comparativo foram retirados da tela. O painel agora apresenta identificação compacta e **Vigência**, **Reajuste salarial**, **Contribuições assistenciais dos empregados**, **Contribuições patronais** e **Outras contribuições**, incluindo valores, periodicidade e prazos localizados nas cláusulas. Contribuições sociais, sindicais, confederativas ou negociais permanecem com seus títulos próprios, sem serem tratadas como assistenciais. Destinação ambígua não é presumida.
+
+O acesso à cláusula integral, aos documentos, à exportação e às pendências foi mantido. Informações não confirmadas são sinalizadas. A exportação PDF acompanha o resumo simples e suas referências. Atualize **analise_resultados.py** e **painel_resultados.py**. Os **68 testes locais** passaram, incluindo valores e vencimentos em frases separadas. A aparência ainda precisa de conferência no Windows.

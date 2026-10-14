@@ -141,6 +141,23 @@ def previa(clausula, reajuste=False):
     return trecho[:480]+('…' if len(trecho)>480 else '') if trecho else 'Prévia não confirmada; leia a cláusula integral.'
 
 
+def resumo_simples(documento):
+    executivo=resumo_executivo(documento)
+    grupos={'Reajuste salarial':executivo['Reajuste salarial'],
+            'Contribuições assistenciais dos empregados':[],
+            'Contribuições patronais':[], 'Outras contribuições':[]}
+    for c in documento['clausulas']:
+        titulo=monitor.normalizar(c['titulo'])
+        if not re.search(r'CONTRIBUI|TAXA.*(?:ASSISTENCIAL|SINDICAL|NEGOCIAL|CONFEDERATIVA)|MENSALIDADE.*SINDICAL',titulo):
+            continue
+        patronal=bool(re.search(r'PATRONAL|EMPREGADORES|EMPRESARIAL',titulo))
+        empregado=bool(re.search(r'LABORAL|EMPREGAD[OA]S|TRABALHADORES|PROFISSIONAL',titulo))
+        grupo='Contribuições patronais' if patronal and not empregado else (
+            'Contribuições assistenciais dos empregados' if 'ASSISTENCIAL' in titulo and empregado and not patronal else 'Outras contribuições')
+        grupos[grupo].append(c)
+    return grupos
+
+
 def pontos_resumo(clausula, reajuste=False):
     """Recortes literais por assunto; não transforma citações em regra aplicável."""
     texto=re.sub(r'\s+',' ',clausula['texto']).strip()
@@ -151,7 +168,7 @@ def pontos_resumo(clausula, reajuste=False):
         'Limites e exceções':r'FAIXA|LIMITE|RESSALV|EXCET|EXCECAO|COMPENSAD',
     } if reajuste else {
         'Valor, percentual e cobrança citados':r'R\$|\d[,.\d]*\s*%|DESCONT|COBRAN',
-        'Periodicidade e pagamento':r'MENSAL|ANUAL|PERIODIC|VENCIM|PAGAMENTO|RECOLH|PRAZO',
+        'Prazos e periodicidade citados':r'MENSAL|ANUAL|PERIODIC|VENCIM|PAGAMENTO|RECOLH|PRAZO|DIAS|ATE |ATÉ ',
         'Oposição':r'OPOSICAO|OPOR',
         'Condições e exceções':r'RESSALV|EXCET|EXCECAO|ISENT|CONDIC',
     }
@@ -161,7 +178,9 @@ def pontos_resumo(clausula, reajuste=False):
         if reajuste:
             candidatas=[f for f in candidatas if not re.search(r'R\$|PISOS (?:SALARIAIS )?PARA',monitor.normalizar(f))]
         if candidatas:
-            frase=candidatas[0]
+            # Periodicidade e vencimento podem estar em frases diferentes.
+            frase=' '.join(candidatas[:2]) if not reajuste and titulo in (
+                'Valor, percentual e cobrança citados','Prazos e periodicidade citados') else candidatas[0]
             pontos.append({'titulo':titulo,'trecho':frase[:360]+('…' if len(frase)>360 else ''),'referencia':referencia(clausula)})
     return pontos
 
@@ -267,9 +286,9 @@ def texto_resumo(doc, consulta):
             'Sindicato profissional: '+(doc['profissional']['nome'] if doc['profissional'] else 'Não confirmado'),
             'Consulta: '+consulta['consultada_em'],'Situação: '+doc['situacao'],
             'Resumo de identificação; não substitui a leitura integral e dos aditivos.']
-    grupos=resumo_executivo(doc)
+    grupos=resumo_simples(doc)
     for titulo,itens in grupos.items():
-        linhas+=['',titulo if titulo=='Reajuste salarial' else 'Contribuições assistenciais — '+titulo]
+        linhas+=['',titulo]
         if not itens:linhas.append('Não localizado com segurança; ausência na extração não comprova ausência no documento.')
         for c in itens:
             linhas += [referencia(c),previa(c,titulo=='Reajuste salarial')]

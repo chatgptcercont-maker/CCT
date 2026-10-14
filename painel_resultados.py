@@ -85,75 +85,25 @@ class PainelResultados:
             return
         d=self.doc
         c=self.novo_cartao(d.get('categoria') or 'Categoria não localizada')
-        self.rotulo(c,f"{d['Tipo']} · {d['Registro']} · registro em {d['Data de registro']}")
-        identificacao=tk.Frame(c,background='white');identificacao.pack(fill='x',pady=8)
-        blocos=[('Sindicato patronal',d['patronal']['nome'] if d['patronal'] else 'Não confirmado'),
-                ('Sindicato profissional',d['profissional']['nome'] if d['profissional'] else 'Não confirmado'),
-                ('Abrangência territorial',d['Abrangência territorial']),
-                ('Data-base',d['data_base'] or 'Não confirmado'),
-                ('Início da vigência documental',d['vigencia_inicio'] or 'Não confirmado'),
-                ('Fim da vigência documental',d['vigencia_fim'] or 'Não confirmado')]
-        for i,(nome,valor) in enumerate(blocos):
-            bloco=tk.Frame(identificacao,background='white')
-            bloco.grid(row=i//2,column=i%2,sticky='nsew',padx=(0,14) if i%2==0 else (14,0),pady=5)
-            identificacao.columnconfigure(i%2,weight=1,uniform='identificacao')
-            ttk.Label(bloco,text=nome,style='Muted.TLabel').pack(anchor='w')
-            label=ttk.Label(bloco,text=valor[:240]+('…' if len(valor)>240 else ''),style='Card.TLabel',wraplength=400,justify='left')
-            label.pack(anchor='w',fill='x',pady=(4,0))
-            bloco.bind('<Configure>',lambda e,l=label:l.configure(wraplength=max(150,e.width)))
-        for p in d['partes']:self.rotulo(c,'Entidade signatária: '+p['nome']+' · CNPJ '+p['cnpj'],True)
-        self.rotulo(c,'Situação: '+d['situacao'],True)
-        self.rotulo(c,'Aditivos relacionados por referência explícita: '+(', '.join(d['aditivos_relacionados']) or 'Não localizados nesta consulta; não comprova inexistência'),True)
-        if d['principal']:self.rotulo(c,'Instrumento principal citado: '+d['principal'])
-        if d.get('processo_principal'):self.rotulo(c,'Processo da convenção principal citado: '+d['processo_principal'])
-        for ref in d['referencia_identificacao'].values():
-            if ref:ttk.Button(c,text='Ver cláusula de '+ref['titulo'],command=lambda r=ref:self.ver_clausula(r)).pack(anchor='w',pady=3)
-        a=self.novo_cartao('Atenção · conferência documental')
-        if not self.consulta['completa']:self.rotulo(a,'Consulta incompleta. O painel contém somente os documentos efetivamente disponíveis.')
+        self.rotulo(c,f"{d['Registro']} · {d['Tipo']} · registro em {d['Data de registro']}")
+        self.rotulo(c,'Abrangência: '+d['Abrangência territorial'],True)
+        vigencia=self.novo_cartao('Vigência')
+        self.rotulo(vigencia,(d['vigencia_inicio'] or 'Não confirmado')+' a '+(d['vigencia_fim'] or 'Não confirmado'))
+        self.rotulo(vigencia,'Data-base: '+(d['data_base'] or 'Não confirmado'),True)
+        self.rotulo(vigencia,d['situacao'],True)
+        ref=d['referencia_identificacao'].get('vigencia')
+        if ref:
+            self.rotulo(vigencia,analise.referencia(ref),True)
+            ttk.Button(vigencia,text='Ver cláusula',command=lambda:self.ver_clausula(ref)).pack(anchor='w',pady=5)
+        grupos=analise.resumo_simples(d)
+        for titulo,itens in grupos.items():
+            bloco=self.novo_cartao(titulo)
+            self.bloco_resumo(bloco,itens,titulo=='Reajuste salarial')
+        a=self.novo_cartao('Pendências e conferência')
+        if not self.consulta['completa']:self.rotulo(a,'Consulta incompleta. Confira os erros no log da execução.')
+        self.rotulo(a,'Resumo de identificação rápida. Valores, prazos e exceções devem ser conferidos nas cláusulas integrais e nos aditivos.',True)
+        self.rotulo(a,'A categoria/destinação de uma contribuição não é presumida quando seu título for ambíguo.',True)
         for alerta in d['alertas']+self.consulta['pendencias']:self.rotulo(a,alerta,True)
-        self.rotulo(a,'Prévia textual, sem interpretação jurídica. Condições, exceções e tabelas devem ser conferidas no texto integral.',True)
-        grupos=analise.resumo_executivo(d)
-        salario=self.novo_cartao('Resumo executivo · Reajuste salarial')
-        self.bloco_resumo(salario,grupos['Reajuste salarial'],True)
-        assist=self.novo_cartao('Resumo executivo · Contribuições assistenciais')
-        for grupo in ('Empregados','Patronal','Destinação não confirmada'):
-            if grupo=='Destinação não confirmada' and not grupos[grupo]:continue
-            ttk.Label(assist,text=grupo,style='Title.TLabel').pack(anchor='w',pady=(8,2))
-            self.bloco_resumo(assist,grupos[grupo])
-        filtro=self.novo_cartao('Seções detalhadas')
-        self.assunto=tk.StringVar(value='Todos os assuntos')
-        seletor=ttk.Combobox(filtro,textvariable=self.assunto,state='readonly',values=['Todos os assuntos',*analise.ASSUNTOS,'Pontos de atenção','Comparativo com a convenção anterior'])
-        seletor.pack(fill='x');seletor.bind('<<ComboboxSelected>>',lambda e:self.filtrar_assuntos())
-        self.secoes={}
-        for n,nome in enumerate([*analise.ASSUNTOS,'Pontos de atenção','Comparativo com a convenção anterior'],1):
-            painel=self.cartao(self.conteudo);painel.pack(fill='x',pady=(0,12));p=painel.conteudo
-            ttk.Label(p,text=f'{n}. {nome}',style='Title.TLabel').pack(anchor='w')
-            itens=analise.por_assunto(d,nome)
-            previa=' · '.join(x['titulo'] for x in itens[:2]) if itens else 'Sem classificação automática confirmada; confira as cláusulas originais.'
-            self.rotulo(p,previa,True)
-            detalhes=tk.Frame(p,background='white')
-            b=ttk.Button(p,text='Ver detalhes',command=lambda f=detalhes: self.expandir(f));b.pack(anchor='w',pady=6)
-            if nome=='Pontos de atenção':
-                for alerta in d['alertas']:self.rotulo(detalhes,alerta)
-                for cl in d['clausulas']:
-                    if any(x in monitor.normalizar(cl['texto']) for x in ('EXCE','PRAZO','RESSALV','CONDIC')):
-                        ttk.Button(detalhes,text='Ver cláusula '+cl['numero']+' · '+cl['titulo'],command=lambda r=cl:self.ver_clausula(r)).pack(anchor='w',pady=3)
-            elif nome=='Comparativo com a convenção anterior':
-                self.rotulo(detalhes,'Comparativo não realizado: nenhum documento anterior foi confirmado. A comparação é textual, sem consolidar aditivos.')
-                ttk.Button(detalhes,text='Selecionar convenção anterior para comparar',command=self.comparar).pack(anchor='w',pady=5)
-            else:
-                for cl in itens:
-                    self.rotulo(detalhes,analise.referencia(cl),True)
-                    self.rotulo(detalhes,analise.previa(cl))
-                    ttk.Button(detalhes,text='Ver cláusula integral',command=lambda r=cl:self.ver_clausula(r)).pack(anchor='w',pady=(2,10))
-                if not itens:self.rotulo(detalhes,'Não localizado na classificação por palavras-chave. Isso não significa que a regra não existe.')
-            self.secoes[nome]=(painel,detalhes,b)
-        c=self.novo_cartao('Como usar este resumo')
-        self.rotulo(c,'Abra Ver cláusula para conferir o texto completo, condições e exceções. Leia integralmente a convenção e seus aditivos antes de aplicar as regras. O resumo não substitui essa leitura.',True)
-        c=self.novo_cartao('Informações não confirmadas')
-        for alerta in d['alertas']+self.consulta['pendencias']:self.rotulo(c,alerta,True)
-        for nome in ('Reajuste salarial','Empregados','Patronal'):
-            if not grupos[nome]:self.rotulo(c,nome+': não localizado com segurança na extração; confira o documento.',True)
         c=self.novo_cartao('Referências')
         self.rotulo(c,f"Registro: {d['Registro']} · arquivo: {Path(d['caminho']).name}")
         self.rotulo(c,'Consulta (horário registrado no log): '+self.consulta['consultada_em']+' · Última atualização: não conhecida',True)
@@ -173,26 +123,12 @@ class PainelResultados:
             self.rotulo(parent,'Não localizado com segurança na extração. Confira o documento; não representa ausência da regra.',True)
         for c in itens:
             self.rotulo(parent,analise.referencia(c),True)
-            self.rotulo(parent,analise.previa(c,reajuste))
-            for ponto in analise.pontos_resumo(c,reajuste):
+            pontos=analise.pontos_resumo(c,reajuste)
+            if not pontos:
+                self.rotulo(parent,'Valores e prazos não confirmados automaticamente; consulte a cláusula.',True)
+            for ponto in pontos:
                 self.rotulo(parent,ponto['titulo']+': '+ponto['trecho'],True)
             ttk.Button(parent,text='Ver cláusula',command=lambda r=c:self.ver_clausula(r)).pack(anchor='w',pady=(2,8))
-
-    def expandir(self,frame):
-        for _,(painel,f,b) in self.secoes.items():
-            if f is frame:
-                if frame.winfo_manager():frame.pack_forget();b.configure(text='Ver detalhes ▾')
-                else:frame.pack(fill='x');b.configure(text='Recolher detalhes ▴')
-                break
-
-    def filtrar_assuntos(self):
-        for nome,(painel,_,_) in self.secoes.items():
-            if self.assunto.get() in ('Todos os assuntos',nome):painel.pack(fill='x',pady=(0,12),before=self.rodape_inicio())
-            else:painel.pack_forget()
-
-    def rodape_inicio(self):
-        # Os seis painéis detalhados precedem os três cartões finais.
-        return self.conteudo.winfo_children()[-3]
 
     def ver_clausula(self,c):
         self.janela_texto(analise.referencia(c),c['texto'],c)

@@ -35,6 +35,18 @@ Não classificar esta regra como assistencial.
 
 
 class ResultadosTests(unittest.TestCase):
+    def test_resumo_simples_inclui_outras_contribuicoes_com_valores_e_prazos(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            d=self.ler(Path(tmp))
+            grupos=analise.resumo_simples(d)
+            self.assertEqual(len(grupos['Contribuições assistenciais dos empregados']),1)
+            self.assertEqual(len(grupos['Contribuições patronais']),1)
+            self.assertEqual([c['numero'] for c in grupos['Outras contribuições']],['OITAVA'])
+            patronal=grupos['Contribuições patronais'][0]
+            pontos=' '.join(p['trecho'] for p in analise.pontos_resumo(patronal))
+            self.assertIn('R$ 100,00',pontos);self.assertIn('30 de abril',pontos)
+            self.assertNotIn('QUARTA',' '.join(c['numero'] for v in grupos.values() for c in v))
+
     def test_ordem_crescente_pelo_numero_do_registro(self):
         docs=[{'Registro':'SRT00003/2026'},{'Registro':'AL000003/2026'},
               {'Registro':'AL000001/2026'},{'Registro':'AL000002/2026'}]
@@ -118,12 +130,8 @@ class ResultadosTests(unittest.TestCase):
             self.assertEqual(Path(d['caminho']).read_bytes(),antes)
             with self.assertRaises(ValueError):analise.exportar_pdf(d,c,d['caminho'])
 
-    def test_detalhes_expandem_recolhem_e_abrem_pdf_na_pagina(self):
+    def test_clausula_integral_e_abertura_pdf_na_pagina(self):
         painel=PainelResultados.__new__(PainelResultados)
-        frame=MagicMock();botao=MagicMock();painel.secoes={'Salários':(MagicMock(),frame,botao)}
-        frame.winfo_manager.return_value=''
-        painel.expandir(frame);frame.pack.assert_called_once()
-        frame.winfo_manager.return_value='pack';painel.expandir(frame);frame.pack_forget.assert_called_once()
         painel.janela_texto=MagicMock()
         c={'numero':'TERCEIRA','titulo':'Reajuste','texto':'Texto integral com exceções','pagina':2,'pagina_final':3,'arquivo':'origem.pdf','registro':'AL000001/2026'}
         painel.ver_clausula(c);self.assertEqual(painel.janela_texto.call_args.args[1],c['texto'])
