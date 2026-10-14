@@ -27,13 +27,21 @@ class ModuloRescisao:
         campos=tk.Frame(area,background='white');campos.pack(fill='x');self.campos={}
         nomes=[('empresa','Empresa / contratante *'),('documento_empresa','CPF ou CNPJ do contratante'),
                ('trabalhador','Trabalhador *'),('cpf','CPF do trabalhador'),('admissao','Admissão · DD/MM/AAAA'),
-               ('desligamento','Desligamento · DD/MM/AAAA'),('local','Local *'),('data_recibo','Data do recibo · DD/MM/AAAA *')]
+               ('desligamento','Desligamento · DD/MM/AAAA'),('local','Local *'),('data_recibo','Data de emissão · DD/MM/AAAA *'),
+               ('endereco_empresa','Endereço do empregador'),('bairro_empresa','Bairro do empregador'),
+               ('municipio_empresa','Município do empregador'),('uf_empresa','UF do empregador'),('cep_empresa','CEP do empregador'),('cnae','CNAE'),('tomador','CNPJ/CEI do tomador ou obra'),
+               ('pis','PIS/PASEP'),('endereco_trabalhador','Endereço do trabalhador'),('bairro_trabalhador','Bairro do trabalhador'),('municipio_trabalhador','Município do trabalhador'),('uf_trabalhador','UF do trabalhador'),('cep_trabalhador','CEP do trabalhador'),
+               ('ctps','CTPS · número, série e UF'),('nascimento','Data de nascimento'),('mae','Nome da mãe'),
+               ('tipo_contrato','Tipo de contrato'),('causa','Causa do afastamento'),('remuneracao','Remuneração do mês anterior'),('aviso','Data do aviso prévio'),('codigo_afastamento','Código do afastamento'),
+               ('pensao_trct','Pensão alimentícia % TRCT'),('pensao_fgts','Pensão alimentícia % FGTS'),('categoria','Categoria do trabalhador'),('codigo_sindical','Código sindical'),('entidade_sindical','CNPJ e nome da entidade sindical'),('data_pagamento','Data do pagamento · DD/MM/AAAA')]
         for i,(campo,nome) in enumerate(nomes):
             grupo=tk.Frame(campos,background='white');grupo.grid(row=i//2,column=i%2,sticky='ew',padx=6,pady=5)
             campos.columnconfigure(i%2,weight=1,uniform='dados')
             ttk.Label(grupo,text=nome,style='Card.TLabel').pack(anchor='w')
             v=tk.StringVar(value=datetime.now(ZoneInfo('America/Sao_Paulo')).strftime('%d/%m/%Y') if campo=='data_recibo' else '')
             self.campos[campo]=v;ttk.Entry(grupo,textvariable=v).pack(fill='x',pady=(4,0))
+        self.quitado=tk.BooleanVar(value=False)
+        ttk.Checkbutton(area,text='Incluir termo de quitação: confirmo o pagamento na data informada',variable=self.quitado).pack(anchor='w',pady=12)
         ttk.Label(area,text='Verbas e descontos',style='Title.TLabel').pack(anchor='w',pady=(16,8))
         entrada=tk.Frame(area,background='white');entrada.pack(fill='x')
         self.descricao=tk.StringVar();self.valor=tk.StringVar();self.tipo=tk.StringVar(value='Provento')
@@ -54,7 +62,8 @@ class ModuloRescisao:
         ttk.Label(area,text='Observações',style='Card.TLabel').pack(anchor='w');self.observacoes=tk.Text(area,height=3,wrap='word',font=('Segoe UI',10));self.observacoes.pack(fill='x',pady=5)
         acoes=tk.Frame(area,background='white');acoes.pack(fill='x',pady=12)
         ttk.Button(acoes,text='Conferir prévia',command=self.previa).pack(side='left')
-        ttk.Button(acoes,text='Gerar recibo PDF',style='Primary.TButton',command=self.gerar).pack(side='left',padx=8)
+        ttk.Button(acoes,text='Gerar modelo PDF',style='Primary.TButton',command=self.gerar).pack(side='left',padx=8)
+        ttk.Button(acoes,text='Gerar Excel',command=self.gerar_excel).pack(side='left',padx=(0,8))
         self.abrir=ttk.Button(acoes,text='Abrir PDF',command=self.abrir_pdf,state='disabled');self.abrir.pack(side='left')
         self.texto=tk.Text(area,height=14,wrap='word',font=('Segoe UI',10),state='disabled');self.texto.pack(fill='x')
         ttk.Label(area,text='Revise as partes, as verbas e o valor líquido antes de gerar. Os dados ficam locais e os recibos anteriores são preservados.',style='Muted.TLabel',wraplength=700).pack(anchor='w',pady=12)
@@ -88,7 +97,7 @@ class ModuloRescisao:
 
     def dados_recibo(self):
         dados={k:v.get() for k,v in self.campos.items()};dados['observacoes']=self.observacoes.get('1.0','end-1c')
-        return preparar_recibo(dados,self.itens)
+        dados['emitir_quitacao']=self.quitado.get();return preparar_recibo(dados,self.itens)
 
     def previa(self):
         try:
@@ -104,6 +113,17 @@ class ModuloRescisao:
             self.ultimo_pdf=exportar_recibo(r,destino);self.abrir.configure(state='normal')
             messagebox.showinfo('Recibo gerado','PDF salvo em '+str(self.ultimo_pdf),parent=self.root)
         except (OSError,ValueError) as exc:messagebox.showerror('Recibo não gerado',str(exc),parent=self.root)
+
+    def gerar_excel(self):
+        r=self.previa()
+        if r is None:return
+        destino=filedialog.asksaveasfilename(parent=self.root,title='Salvar cópia do modelo',defaultextension='.xlsx',initialfile='rescisao_avulsa.xlsx',filetypes=[('Excel','*.xlsx')])
+        if not destino:return
+        try:
+            from modelo_rescisao import exportar_excel
+            p=exportar_excel(r,destino)
+            messagebox.showinfo('Modelo gerado',str(p),parent=self.root)
+        except (ValueError,OSError) as exc:messagebox.showerror('Modelo não gerado',str(exc),parent=self.root)
 
     def abrir_pdf(self):
         if self.ultimo_pdf:

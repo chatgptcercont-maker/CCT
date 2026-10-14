@@ -3,9 +3,6 @@ from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 import re
-import textwrap
-from pypdf import PdfWriter
-from pypdf.generic import DictionaryObject, NameObject, DecodedStreamObject
 
 
 def valor_monetario(texto):
@@ -31,6 +28,7 @@ def data_valida(texto,obrigatoria=False):
 
 
 def preparar_recibo(dados,itens):
+    emitir_quitacao=dados.get('emitir_quitacao') is True
     d={k:str(v).strip() for k,v in dados.items()}
     for campo,nome in [('empresa','Empresa ou contratante'),('trabalhador','Trabalhador'),('local','Local')]:
         if not d.get(campo):raise ValueError(nome+' deve ser informado.')
@@ -44,6 +42,9 @@ def preparar_recibo(dados,itens):
             raise ValueError('Confira o CPF/CNPJ informado. Use 11 ou 14 dígitos conforme o documento.')
     dia=data_valida(d.get('data_recibo',''),True)
     admissao=data_valida(d.get('admissao',''));desligamento=data_valida(d.get('desligamento',''))
+    for campo in ('nascimento','aviso'):
+        if d.get(campo):data_valida(d[campo])
+    data_pagamento=data_valida(d.get('data_pagamento',''),emitir_quitacao)
     if admissao and desligamento and admissao>desligamento:raise ValueError('Admissão não pode ser posterior ao desligamento.')
     linhas=[];proventos=Decimal('0.00');descontos=Decimal('0.00')
     for item in itens:
@@ -59,49 +60,23 @@ def preparar_recibo(dados,itens):
     if not linhas:raise ValueError('Adicione ao menos uma verba.')
     if descontos>proventos:raise ValueError('Os descontos superam os proventos. Confira os valores antes de emitir.')
     return {'dados':d,'itens':linhas,'proventos':proventos,'descontos':descontos,
-            'liquido':proventos-descontos,'data':dia,'admissao':admissao,'desligamento':desligamento}
+            'liquido':proventos-descontos,'data':dia,'admissao':admissao,'desligamento':desligamento,
+            'emitir_quitacao':emitir_quitacao,'data_pagamento':data_pagamento}
 
 
 def texto_recibo(recibo):
-    d=recibo['dados']
-    linhas=['RECIBO DE RESCISÃO AVULSA','',
-        'Empresa/contratante: '+d['empresa'],'CPF/CNPJ: '+(d.get('documento_empresa') or 'Não informado'),
-        'Trabalhador: '+d['trabalhador'],'CPF: '+(d.get('cpf') or 'Não informado'),
-        'Admissão: '+(d.get('admissao') or 'Não informada'),'Desligamento: '+(d.get('desligamento') or 'Não informado'),
-        '','VALORES DISCRIMINADOS']
-    for i,item in enumerate(recibo['itens'],1):
-        linhas.append(f"{i}. {item['tipo']} — {item['descricao']}: {reais(item['valor'])}")
-    linhas+=['','Total de proventos: '+reais(recibo['proventos']),'Total de descontos: '+reais(recibo['descontos']),
-        'Valor líquido: '+reais(recibo['liquido']),'',
-        'Os valores acima foram informados manualmente pelo responsável pela elaboração.']
-    if d.get('observacoes'):linhas+=['','Observações: '+d['observacoes']]
-    linhas+=['',d['local']+', '+recibo['data'].strftime('%d/%m/%Y'),'',
-        'Recebimento: a assinatura abaixo confirma exclusivamente o recebimento dos valores discriminados neste documento.',
-        '', '________________________________________________________',
-        'Assinatura do trabalhador/recebedor','',
-        '________________________________________________________','Assinatura do responsável pelo pagamento','',
-        'Documento sem assinatura não comprova pagamento. Não é TRCT e não declara quitação geral do contrato.']
+    from modelo_rescisao import folhas
+    linhas=[]
+    for aba,valores,_ in folhas(recibo):
+        linhas.extend(['',aba['nome'],''])
+        for r in range(aba['linhas']):
+            itens=[str(valores.get((r,c),'')) for c in range(6) if str(valores.get((r,c),''))]
+            if itens:linhas.append(' | '.join(itens))
+    if not recibo.get('emitir_quitacao'):
+        linhas.append('Termo de quitação não incluído: pagamento não confirmado.')
     return '\n'.join(linhas)
 
 
 def exportar_recibo(recibo,destino):
-    destino=Path(destino)
-    if destino.suffix.lower()!='.pdf':raise ValueError('Escolha um arquivo com extensão .pdf.')
-    if destino.exists():raise ValueError('O arquivo já existe. Escolha outro nome para preservar o anterior.')
-    linhas=[]
-    for linha in texto_recibo(recibo).splitlines():linhas.extend(textwrap.wrap(linha,86) or [''])
-    writer=PdfWriter()
-    for inicio in range(0,len(linhas),53):
-        page=writer.add_blank_page(width=595,height=842)
-        font=DictionaryObject({NameObject('/Type'):NameObject('/Font'),NameObject('/Subtype'):NameObject('/Type1'),NameObject('/BaseFont'):NameObject('/Helvetica'),NameObject('/Encoding'):NameObject('/WinAnsiEncoding')})
-        page[NameObject('/Resources')]=DictionaryObject({NameObject('/Font'):DictionaryObject({NameObject('/F1'):writer._add_object(font)})})
-        comandos=[b'BT /F1 10 Tf 14 TL 40 800 Td']
-        for linha in linhas[inicio:inicio+53]:
-            try:raw=linha.encode('cp1252')
-            except UnicodeEncodeError as exc:raise ValueError('O texto contém caracteres não suportados pelo PDF. Confira a prévia.') from exc
-            raw=raw.replace(b'\\',b'\\\\').replace(b'(',b'\\(').replace(b')',b'\\)')
-            comandos.append(b'('+raw+b') Tj T*')
-        comandos.append(b'ET');stream=DecodedStreamObject();stream.set_data(b'\n'.join(comandos))
-        page[NameObject('/Contents')]=writer._add_object(stream)
-    with destino.open('xb') as arquivo:writer.write(arquivo)
-    return destino
+    from modelo_rescisao import exportar_pdf
+    return exportar_pdf(recibo,destino)
