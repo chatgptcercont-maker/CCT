@@ -16,6 +16,9 @@ AGENTES = (
     {'id':'auditor_folha','nome':'Conferência de Folhas de Pagamentos (Auditor)','status':'A configurar',
      'descricao':'Módulo reservado para auditoria de folhas de pagamento. Os documentos, as regras de conferência e os relatórios serão definidos posteriormente.',
      'acao':'Ver módulo'},
+    {'id':'sero','nome':'Regularização de Obras (SERO)','status':'A configurar',
+     'descricao':'Espaço reservado para regularização de obras. Os documentos, as regras e as funcionalidades serão definidos posteriormente.',
+     'acao':'Ver módulo'},
 )
 
 
@@ -88,6 +91,17 @@ class HubAgentes:
         texto_auditor.pack(fill='x',pady=(0,15))
         c.conteudo.bind('<Configure>',lambda e:[l.configure(wraplength=max(200,e.width)) for l in (titulo,texto_auditor)],add='+')
         ttk.Button(c.conteudo,text='Voltar ao hub',command=self.mostrar_inicio).pack(anchor='w')
+        self.sero=tk.Frame(root,background='#f0f5f7',padx=26,pady=26)
+        c=cartao(self.sero);c.pack(fill='x')
+        ttk.Label(c.conteudo,text='Regularização de Obras (SERO)',style='Title.TLabel').pack(anchor='w',pady=(0,12))
+        texto_sero=ttk.Label(c.conteudo,text='A configurar\n\n'
+            'Este módulo será configurado posteriormente.\n\n'
+            'Serão definidos os documentos necessários, as regras e as funcionalidades '
+            'para regularização de obras. Ainda não realiza cálculos, consultas ou envios ao SERO.',
+            style='Card.TLabel',wraplength=650,justify='left')
+        texto_sero.pack(fill='x',pady=(0,15))
+        c.conteudo.bind('<Configure>',lambda e:texto_sero.configure(wraplength=max(200,e.width)),add='+')
+        ttk.Button(c.conteudo,text='Voltar ao hub',command=self.mostrar_inicio).pack(anchor='w')
         self.rescisao=None
         root.protocol('WM_DELETE_WINDOW',self.fechar)
         self.mostrar_inicio()
@@ -104,6 +118,7 @@ class HubAgentes:
 
     def ocultar_telas(self):
         self.home.pack_forget();self.admissao.pack_forget();self.auditor_folha.pack_forget()
+        self.sero.pack_forget()
         if self.rescisao is not None:self.rescisao.pack_forget()
         if self.tela_monitor is not None:self.tela_monitor.pack_forget()
 
@@ -141,6 +156,9 @@ class HubAgentes:
         elif identificador=='auditor_folha':
             self.auditor_folha.pack(fill='both',expand=True)
             self.root.title('Conferência de Folhas de Pagamentos (Auditor) | Cercont — A configurar')
+        elif identificador=='sero':
+            self.sero.pack(fill='both',expand=True)
+            self.root.title('Regularização de Obras (SERO) | Cercont — A configurar')
         else:
             self.admissao.pack(fill='both',expand=True)
             self.root.title('Conferência de Admissão | Cercont — Em preparação')
