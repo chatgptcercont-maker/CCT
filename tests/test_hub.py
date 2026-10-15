@@ -8,6 +8,7 @@ class HubTests(unittest.TestCase):
         h=HubAgentes.__new__(HubAgentes)
         h.root=MagicMock();h.home=MagicMock();h.admissao=MagicMock();h.rescisao=MagicMock();h.auditor_folha=MagicMock()
         h.sero=MagicMock()
+        h.calculadoras=MagicMock()
         h.monitor=None;h.tela_monitor=None;h.fabrica_monitor=MagicMock()
         return h
 

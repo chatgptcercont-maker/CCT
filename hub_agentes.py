@@ -19,6 +19,17 @@ AGENTES = (
     {'id':'sero','nome':'Regularização de Obras (SERO)','status':'A configurar',
      'descricao':'Espaço reservado para regularização de obras. Os documentos, as regras e as funcionalidades serão definidos posteriormente.',
      'acao':'Ver módulo'},
+    {'id':'calculadoras','nome':'Calculadoras','status':'A configurar · 5 calculadoras',
+     'descricao':'Afastamento, seguro-desemprego, desoneração da folha, juros de FGTS em atraso e custo mensal/anual do funcionário em um único módulo.',
+     'acao':'Abrir calculadoras'},
+)
+
+CALCULADORAS = (
+    'Calculadora de Afastamento',
+    'Calculadora de Seguro-Desemprego',
+    'Calculadora da Desoneração da Folha',
+    'Calculadora de Juros — FGTS em Atraso',
+    'Calculadora de Custo Mensal / Anual do Funcionário',
 )
 
 
@@ -56,7 +67,7 @@ class HubAgentes:
         self.seletor_modulo.set(f'Escolha um dos {len(AGENTES)} módulos')
         self.seletor_modulo.pack(side='left',fill='x',expand=True)
         self.seletor_modulo.bind('<<ComboboxSelected>>',self.abrir_selecionado)
-        ttk.Label(atalhos,text='Hub · SERO incluído',style='Muted.TLabel').pack(side='right',padx=(12,0))
+        ttk.Label(atalhos,text='Hub · SERO e Calculadoras',style='Muted.TLabel').pack(side='right',padx=(12,0))
         viewport=tk.Frame(self.home,background='#f0f5f7');viewport.pack(fill='both',expand=True)
         self.canvas_inicio=tk.Canvas(viewport,background='#f0f5f7',highlightthickness=0)
         barra=ttk.Scrollbar(viewport,command=self.canvas_inicio.yview);barra.pack(side='right',fill='y')
@@ -111,6 +122,22 @@ class HubAgentes:
         texto_sero.pack(fill='x',pady=(0,15))
         c.conteudo.bind('<Configure>',lambda e:texto_sero.configure(wraplength=max(200,e.width)),add='+')
         ttk.Button(c.conteudo,text='Voltar ao hub',command=self.mostrar_inicio).pack(anchor='w')
+        self.calculadoras=tk.Frame(root,background='#f0f5f7',padx=26,pady=26)
+        c=cartao(self.calculadoras);c.pack(fill='x')
+        ttk.Label(c.conteudo,text='Calculadoras',style='Title.TLabel').pack(anchor='w',pady=(0,12))
+        ttk.Label(c.conteudo,text='Escolha uma calculadora. Todas aguardam configuração das regras.',
+            style='Card.TLabel',wraplength=650).pack(anchor='w',pady=(0,12))
+        self.seletor_calculadora=ttk.Combobox(c.conteudo,state='readonly',values=CALCULADORAS,height=5)
+        self.seletor_calculadora.pack(fill='x',pady=(0,12))
+        self.seletor_calculadora.current(0)
+        self.detalhe_calculadora=tk.StringVar()
+        detalhe=ttk.Label(c.conteudo,textvariable=self.detalhe_calculadora,
+            style='Card.TLabel',wraplength=650,justify='left')
+        detalhe.pack(fill='x',pady=(0,15))
+        c.conteudo.bind('<Configure>',lambda e:detalhe.configure(wraplength=max(200,e.width)),add='+')
+        self.seletor_calculadora.bind('<<ComboboxSelected>>',self.selecionar_calculadora)
+        self.selecionar_calculadora()
+        ttk.Button(c.conteudo,text='Voltar ao hub',command=self.mostrar_inicio).pack(anchor='w')
         self.rescisao=None
         root.protocol('WM_DELETE_WINDOW',self.fechar)
         self.mostrar_inicio()
@@ -125,6 +152,13 @@ class HubAgentes:
             self.abrir(AGENTES[indice]['id'])
             self.seletor_modulo.set(f'Escolha um dos {len(AGENTES)} módulos')
 
+    def selecionar_calculadora(self,event=None):
+        indice=self.seletor_calculadora.current()
+        if 0<=indice<len(CALCULADORAS):
+            self.detalhe_calculadora.set(CALCULADORAS[indice]+'\n\nA configurar\n\n'
+                'Os campos, as fórmulas, as tabelas aplicáveis e os resultados serão definidos posteriormente. '
+                'Esta calculadora ainda não executa cálculos.')
+
     def redimensionar(self,event):
         colunas=2 if event.width>=850 else 1
         for i,c in enumerate(self.cards):
@@ -134,6 +168,7 @@ class HubAgentes:
     def ocultar_telas(self):
         self.home.pack_forget();self.admissao.pack_forget();self.auditor_folha.pack_forget()
         self.sero.pack_forget()
+        self.calculadoras.pack_forget()
         if self.rescisao is not None:self.rescisao.pack_forget()
         if self.tela_monitor is not None:self.tela_monitor.pack_forget()
 
@@ -174,6 +209,9 @@ class HubAgentes:
         elif identificador=='sero':
             self.sero.pack(fill='both',expand=True)
             self.root.title('Regularização de Obras (SERO) | Cercont — A configurar')
+        elif identificador=='calculadoras':
+            self.calculadoras.pack(fill='both',expand=True)
+            self.root.title('Calculadoras | Cercont — A configurar')
         else:
             self.admissao.pack(fill='both',expand=True)
             self.root.title('Conferência de Admissão | Cercont — Em preparação')
