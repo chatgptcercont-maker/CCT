@@ -23,13 +23,13 @@ class FGTSTests(unittest.TestCase):
         self.assertEqual(conferir_dados(d)['valores'],{'aprendiz':Decimal('100.00')})
 
     def test_regra_historica_obrigatoria_apenas_no_intervalo(self):
-        for comp in ('01/2002','12/2006'):
+        for comp in ('10/2001','01/2002','12/2006'):
             self.assertTrue(exige_regra(comp))
             d=self.dados();d['competencia']=comp
             with self.assertRaises(ValueError):conferir_dados(d)
             for regra in REGRAS:
                 d['regra']=regra;self.assertEqual(conferir_dados(d)['regra'],regra)
-        for comp in ('12/2001','01/2007'):self.assertFalse(exige_regra(comp))
+        for comp in ('09/2001','01/2007'):self.assertFalse(exige_regra(comp))
 
     def test_entradas_invalidas_nao_produzem_resultado(self):
         for campo,valor in [('competencia','13/2026'),('competencia','01/1994'),

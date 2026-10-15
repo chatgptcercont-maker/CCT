@@ -20,7 +20,7 @@ AGENTES = (
      'descricao':'Espaço reservado para regularização de obras. Os documentos, as regras e as funcionalidades serão definidos posteriormente.',
      'acao':'Ver módulo'},
     {'id':'calculadoras','nome':'Calculadoras','status':'A configurar · 5 calculadoras',
-     'descricao':'Cinco calculadoras em um único módulo. FGTS em atraso com formulário de conferência; cálculo aguardando coeficientes oficiais.',
+     'descricao':'Cinco calculadoras em um único módulo. FGTS em atraso consulta automaticamente os coeficientes oficiais da CAIXA para simulação mensal SEFIP/GRF.',
      'acao':'Abrir calculadoras'},
 )
 
@@ -127,7 +127,7 @@ class HubAgentes:
         self.calculadoras=tk.Frame(root,background='#f0f5f7',padx=26,pady=26)
         c=cartao(self.calculadoras);c.pack(fill='x')
         ttk.Label(c.conteudo,text='Calculadoras',style='Title.TLabel').pack(anchor='w',pady=(0,12))
-        ttk.Label(c.conteudo,text='Escolha uma calculadora. FGTS com formulário adaptado; cálculo aguardando coeficientes oficiais.',
+        ttk.Label(c.conteudo,text='Escolha uma calculadora. FGTS mensal SEFIP/GRF com consulta automática à CAIXA; outras opções a configurar.',
             style='Card.TLabel',wraplength=650).pack(anchor='w',pady=(0,12))
         self.seletor_calculadora=ttk.Combobox(c.conteudo,state='readonly',values=CALCULADORAS,height=5)
         self.seletor_calculadora.pack(fill='x',pady=(0,12))
