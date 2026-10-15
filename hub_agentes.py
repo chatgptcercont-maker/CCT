@@ -48,6 +48,15 @@ class HubAgentes:
         tk.Label(titulo,text='CERCONT · DEPARTAMENTO PESSOAL',background='#064d47',foreground='#d9e7e4',font=('Segoe UI',10)).pack(anchor='w')
         tk.Label(titulo,text='Hub de agentes',background='#064d47',foreground='white',font=('Segoe UI',24,'bold')).pack(anchor='w',pady=(6,0))
         tk.Label(titulo,text='Escolha a ferramenta para começar.',background='#064d47',foreground='#d9e7e4',font=('Segoe UI',11)).pack(anchor='w',pady=(6,0))
+        atalhos=tk.Frame(self.home,background='white',padx=24,pady=12)
+        atalhos.pack(fill='x')
+        ttk.Label(atalhos,text='Abrir módulo:',style='Card.TLabel').pack(side='left',padx=(0,10))
+        self.seletor_modulo=ttk.Combobox(atalhos,state='readonly',height=len(AGENTES),
+            values=[a['nome'] for a in AGENTES],font=('Segoe UI',10))
+        self.seletor_modulo.set(f'Escolha um dos {len(AGENTES)} módulos')
+        self.seletor_modulo.pack(side='left',fill='x',expand=True)
+        self.seletor_modulo.bind('<<ComboboxSelected>>',self.abrir_selecionado)
+        ttk.Label(atalhos,text='Hub · SERO incluído',style='Muted.TLabel').pack(side='right',padx=(12,0))
         viewport=tk.Frame(self.home,background='#f0f5f7');viewport.pack(fill='both',expand=True)
         self.canvas_inicio=tk.Canvas(viewport,background='#f0f5f7',highlightthickness=0)
         barra=ttk.Scrollbar(viewport,command=self.canvas_inicio.yview);barra.pack(side='right',fill='y')
@@ -109,6 +118,12 @@ class HubAgentes:
     def rolar_inicio(self,event):
         if self.home.winfo_ismapped():
             self.canvas_inicio.yview_scroll(-int(event.delta/120),'units')
+
+    def abrir_selecionado(self,event=None):
+        indice=self.seletor_modulo.current()
+        if 0<=indice<len(AGENTES):
+            self.abrir(AGENTES[indice]['id'])
+            self.seletor_modulo.set(f'Escolha um dos {len(AGENTES)} módulos')
 
     def redimensionar(self,event):
         colunas=2 if event.width>=850 else 1

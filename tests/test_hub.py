@@ -51,5 +51,19 @@ class HubTests(unittest.TestCase):
         with self.assertRaises(ValueError):h.abrir('inexistente')
         h.fabrica_monitor.assert_not_called()
 
+    def test_seletor_abre_sero_e_retorna_ao_hub(self):
+        from hub_agentes import AGENTES
+        h=self.hub();h.seletor_modulo=MagicMock()
+        h.seletor_modulo.current.return_value=next(i for i,a in enumerate(AGENTES) if a['id']=='sero')
+        h.abrir_selecionado()
+        h.sero.pack.assert_called_once();h.fabrica_monitor.assert_not_called()
+        h.root.title.assert_called_with('Regularização de Obras (SERO) | Cercont — A configurar')
+        h.mostrar_inicio();h.home.pack.assert_called_once()
+        self.assertGreaterEqual(h.sero.pack_forget.call_count,2)
+
+    def test_seletor_sem_selecao_nao_abre_modulo(self):
+        h=self.hub();h.seletor_modulo=MagicMock();h.seletor_modulo.current.return_value=-1
+        h.abrir_selecionado();h.fabrica_monitor.assert_not_called();h.sero.pack.assert_not_called()
+
 
 if __name__=='__main__':unittest.main()

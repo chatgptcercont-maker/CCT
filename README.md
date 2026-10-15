@@ -6,6 +6,8 @@ A abertura do programa apresenta um hub para escolher a ferramenta. **Recibo de 
 
 **Regularização de Obras (SERO)** está disponível no hub como **A configurar**, com tela na mesma janela e botão de retorno. Seus documentos, regras e funcionalidades serão definidos posteriormente; ainda não realiza cálculos, consultas ou envios ao SERO.
 
+Para acessar todos os módulos sem rolar a tela, use **Abrir módulo** no topo do hub. O cartão do SERO também aparece mais abaixo na lista de cartões. A indicação **Hub · SERO incluído** identifica a versão com esse acesso. Caso não apareça, feche o programa e atualize `hub_agentes.py` na mesma pasta do `abrir_monitor.bat` que você utiliza; baixar outro ZIP não atualiza automaticamente uma instalação anterior.
+
 O hub também inclui **Conferência de Folhas de Pagamentos (Auditor)**, com status **A configurar**. A entrada abre uma tela na mesma janela com retorno ao hub; os documentos, regras de auditoria e relatórios serão definidos posteriormente. Ainda não processa folhas de pagamento.
 
 Ferramenta Python para o Departamento Pessoal da Cercont. A interface permite clicar em **Consultar novidades** para pesquisar o Mediador, obter documentos e atualizar uma nova cópia do controle, sem anexos ou arquivo de resultados preparado pelo usuário.
