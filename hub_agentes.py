@@ -20,7 +20,7 @@ AGENTES = (
      'descricao':'Espaço reservado para regularização de obras. Os documentos, as regras e as funcionalidades serão definidos posteriormente.',
      'acao':'Ver módulo'},
     {'id':'calculadoras','nome':'Calculadoras','status':'A configurar · 5 calculadoras',
-     'descricao':'Afastamento, seguro-desemprego, desoneração da folha, juros de FGTS em atraso e custo mensal/anual do funcionário em um único módulo.',
+     'descricao':'Cinco calculadoras em um único módulo. FGTS em atraso com formulário de conferência; cálculo aguardando coeficientes oficiais.',
      'acao':'Abrir calculadoras'},
 )
 
@@ -127,7 +127,7 @@ class HubAgentes:
         self.calculadoras=tk.Frame(root,background='#f0f5f7',padx=26,pady=26)
         c=cartao(self.calculadoras);c.pack(fill='x')
         ttk.Label(c.conteudo,text='Calculadoras',style='Title.TLabel').pack(anchor='w',pady=(0,12))
-        ttk.Label(c.conteudo,text='Escolha uma calculadora. Todas aguardam configuração das regras.',
+        ttk.Label(c.conteudo,text='Escolha uma calculadora. FGTS com formulário adaptado; cálculo aguardando coeficientes oficiais.',
             style='Card.TLabel',wraplength=650).pack(anchor='w',pady=(0,12))
         self.seletor_calculadora=ttk.Combobox(c.conteudo,state='readonly',values=CALCULADORAS,height=5)
         self.seletor_calculadora.pack(fill='x',pady=(0,12))
@@ -136,6 +136,9 @@ class HubAgentes:
         detalhe=ttk.Label(c.conteudo,textvariable=self.detalhe_calculadora,
             style='Card.TLabel',wraplength=650,justify='left')
         detalhe.pack(fill='x',pady=(0,15))
+        self.detalhe_calculadora_widget=detalhe
+        self.area_fgts=tk.Frame(self.calculadoras,background='white')
+        self.formulario_fgts=None
         c.conteudo.bind('<Configure>',lambda e:detalhe.configure(wraplength=max(200,e.width)),add='+')
         self.seletor_calculadora.bind('<<ComboboxSelected>>',self.selecionar_calculadora)
         self.selecionar_calculadora()
@@ -157,6 +160,16 @@ class HubAgentes:
     def selecionar_calculadora(self,event=None):
         indice=self.seletor_calculadora.current()
         if 0<=indice<len(CALCULADORAS):
+            if indice==3:
+                if self.formulario_fgts is None:
+                    from calculadora_fgts import FormularioFGTS
+                    self.formulario_fgts=FormularioFGTS(self.area_fgts)
+                    self.formulario_fgts.root.pack(fill='both',expand=True)
+                self.detalhe_calculadora_widget.pack_forget()
+                self.area_fgts.pack(fill='both',expand=True,pady=(12,0))
+                return
+            self.area_fgts.pack_forget()
+            self.detalhe_calculadora_widget.pack(fill='x',pady=(0,15))
             self.detalhe_calculadora.set(CALCULADORAS[indice]+'\n\nA configurar\n\n'
                 'Os campos, as fórmulas, as tabelas aplicáveis e os resultados serão definidos posteriormente. '
                 'Esta calculadora ainda não executa cálculos.')
