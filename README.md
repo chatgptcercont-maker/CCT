@@ -6,7 +6,7 @@ A abertura do programa apresenta um hub para escolher a ferramenta. **Recibo de 
 
 **Regularização de Obras (SERO)** está disponível no hub como **A configurar**, com tela na mesma janela e botão de retorno. Seus documentos, regras e funcionalidades serão definidos posteriormente; ainda não realiza cálculos, consultas ou envios ao SERO.
 
-Para acessar todos os módulos sem rolar a tela, use **Abrir módulo** no topo do hub. O cartão do SERO também aparece mais abaixo na lista de cartões. A indicação **Hub · SERO e Calculadoras** identifica a versão atual. Caso não apareça, feche o programa e atualize `hub_agentes.py` na mesma pasta do `abrir_monitor.bat` que você utiliza; baixar outro ZIP não atualiza automaticamente uma instalação anterior.
+Para acessar todos os módulos sem rolar a tela, use **Abrir módulo** no topo do hub. **Calculadoras** também tem um botão fixo no topo, à direita da lista de módulos. O cartão do SERO aparece mais abaixo na lista de cartões. Caso essas opções não apareçam, feche o programa e atualize `hub_agentes.py` na mesma pasta do `abrir_monitor.bat` que você utiliza; baixar outro ZIP não atualiza automaticamente uma instalação anterior.
 
 **Calculadoras** reúne em um único módulo: Afastamento; Seguro-Desemprego; Desoneração da Folha; Juros — FGTS em Atraso; e Custo Mensal / Anual do Funcionário. Selecione a opção na lista dentro do módulo, na mesma janela. Todas estão **A configurar**: campos, fórmulas, tabelas e regras serão definidos posteriormente; ainda não calculam valores. Para acessar, atualize `hub_agentes.py`, reabra `abrir_monitor.bat` e escolha **Calculadoras** em **Abrir módulo**.
 

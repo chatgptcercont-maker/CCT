@@ -61,13 +61,15 @@ class HubAgentes:
         tk.Label(titulo,text='Escolha a ferramenta para começar.',background='#064d47',foreground='#d9e7e4',font=('Segoe UI',11)).pack(anchor='w',pady=(6,0))
         atalhos=tk.Frame(self.home,background='white',padx=24,pady=12)
         atalhos.pack(fill='x')
+        self.botao_calculadoras=ttk.Button(atalhos,text='Calculadoras',style='Primary.TButton',
+            command=lambda:self.abrir('calculadoras'))
+        self.botao_calculadoras.pack(side='right',padx=(12,0))
         ttk.Label(atalhos,text='Abrir módulo:',style='Card.TLabel').pack(side='left',padx=(0,10))
         self.seletor_modulo=ttk.Combobox(atalhos,state='readonly',height=len(AGENTES),
             values=[a['nome'] for a in AGENTES],font=('Segoe UI',10))
         self.seletor_modulo.set(f'Escolha um dos {len(AGENTES)} módulos')
         self.seletor_modulo.pack(side='left',fill='x',expand=True)
         self.seletor_modulo.bind('<<ComboboxSelected>>',self.abrir_selecionado)
-        ttk.Label(atalhos,text='Hub · SERO e Calculadoras',style='Muted.TLabel').pack(side='right',padx=(12,0))
         viewport=tk.Frame(self.home,background='#f0f5f7');viewport.pack(fill='both',expand=True)
         self.canvas_inicio=tk.Canvas(viewport,background='#f0f5f7',highlightthickness=0)
         barra=ttk.Scrollbar(viewport,command=self.canvas_inicio.yview);barra.pack(side='right',fill='y')
