@@ -13,6 +13,9 @@ AGENTES = (
     {'id':'admissao','nome':'Conferência de Admissão','status':'Aguardando definição das regras',
      'descricao':'Espaço reservado para conferir documentos e dados de admissão. Nenhuma conferência automática está implementada neste módulo.',
      'acao':'Ver módulo'},
+    {'id':'auditor_folha','nome':'Conferência de Folhas de Pagamentos (Auditor)','status':'A configurar',
+     'descricao':'Módulo reservado para auditoria de folhas de pagamento. Os documentos, as regras de conferência e os relatórios serão definidos posteriormente.',
+     'acao':'Ver módulo'},
 )
 
 
@@ -73,6 +76,18 @@ class HubAgentes:
             'O Monitor de CCT já pode ser utilizado pelo hub.',style='Card.TLabel',wraplength=650,justify='left')
         texto.pack(fill='x',pady=(0,15));c.conteudo.bind('<Configure>',lambda e:texto.configure(wraplength=max(200,e.width)),add='+')
         ttk.Button(c.conteudo,text='Voltar ao hub',command=self.mostrar_inicio).pack(anchor='w')
+        self.auditor_folha=tk.Frame(root,background='#f0f5f7',padx=26,pady=26)
+        c=cartao(self.auditor_folha);c.pack(fill='x')
+        titulo=ttk.Label(c.conteudo,text='Conferência de Folhas de Pagamentos (Auditor)',style='Title.TLabel',wraplength=650)
+        titulo.pack(anchor='w',pady=(0,12))
+        texto_auditor=ttk.Label(c.conteudo,text='A configurar\n\n'
+            'Este módulo será configurado posteriormente. Ainda não executa auditorias.\n\n'
+            'Serão definidos os documentos de entrada, os campos e regras de conferência, '
+            'as divergências a sinalizar e o formato do relatório.',
+            style='Card.TLabel',wraplength=650,justify='left')
+        texto_auditor.pack(fill='x',pady=(0,15))
+        c.conteudo.bind('<Configure>',lambda e:[l.configure(wraplength=max(200,e.width)) for l in (titulo,texto_auditor)],add='+')
+        ttk.Button(c.conteudo,text='Voltar ao hub',command=self.mostrar_inicio).pack(anchor='w')
         self.rescisao=None
         root.protocol('WM_DELETE_WINDOW',self.fechar)
         self.mostrar_inicio()
@@ -88,7 +103,7 @@ class HubAgentes:
             c.grid(row=i//colunas,column=i%colunas,sticky='ew',padx=(6 if colunas==2 else 0),pady=(0,12))
 
     def ocultar_telas(self):
-        self.home.pack_forget();self.admissao.pack_forget()
+        self.home.pack_forget();self.admissao.pack_forget();self.auditor_folha.pack_forget()
         if self.rescisao is not None:self.rescisao.pack_forget()
         if self.tela_monitor is not None:self.tela_monitor.pack_forget()
 
@@ -123,6 +138,9 @@ class HubAgentes:
         elif identificador=='rescisao':
             self.rescisao.pack(fill='both',expand=True)
             self.root.title('Recibo de Rescisão Avulsa | Cercont — Valores manuais')
+        elif identificador=='auditor_folha':
+            self.auditor_folha.pack(fill='both',expand=True)
+            self.root.title('Conferência de Folhas de Pagamentos (Auditor) | Cercont — A configurar')
         else:
             self.admissao.pack(fill='both',expand=True)
             self.root.title('Conferência de Admissão | Cercont — Em preparação')

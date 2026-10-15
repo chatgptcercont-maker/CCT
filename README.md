@@ -4,6 +4,8 @@ A abertura do programa apresenta um hub para escolher a ferramenta. **Recibo de 
 
 ## Monitor Diário de Convenções e Aditivos — Alagoas
 
+O hub também inclui **Conferência de Folhas de Pagamentos (Auditor)**, com status **A configurar**. A entrada abre uma tela na mesma janela com retorno ao hub; os documentos, regras de auditoria e relatórios serão definidos posteriormente. Ainda não processa folhas de pagamento.
+
 Ferramenta Python para o Departamento Pessoal da Cercont. A interface permite clicar em **Consultar novidades** para pesquisar o Mediador, obter documentos e atualizar uma nova cópia do controle, sem anexos ou arquivo de resultados preparado pelo usuário.
 
 Com Python instalado, extraia o ZIP e dê dois cliques em `abrir_monitor.bat` no Windows. A primeira abertura prepara as dependências automaticamente; nas próximas, abre o monitor sem comandos no CMD. Veja o [GUIA_MONITOR.md](GUIA_MONITOR.md). Na janela, selecione **Ano de 2026** para o retorno anual ou **Últimos 7 dias** para o acompanhamento recente. O relatório lista todos os instrumentos encontrados, mesmo os já existentes no controle; só os novos são acrescentados à cópia cumulativa. Não há agendamento automático.

@@ -6,7 +6,7 @@ from hub_agentes import HubAgentes
 class HubTests(unittest.TestCase):
     def hub(self):
         h=HubAgentes.__new__(HubAgentes)
-        h.root=MagicMock();h.home=MagicMock();h.admissao=MagicMock();h.rescisao=MagicMock()
+        h.root=MagicMock();h.home=MagicMock();h.admissao=MagicMock();h.rescisao=MagicMock();h.auditor_folha=MagicMock()
         h.monitor=None;h.tela_monitor=None;h.fabrica_monitor=MagicMock()
         return h
 
