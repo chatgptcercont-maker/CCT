@@ -4,6 +4,9 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 
 AGENTES = (
+    {'id':'perdcomp','nome':'PERDCOMP','status':'A configurar',
+     'descricao':'Módulo reservado para PER/DCOMP. Documentos, regras de conferência e funcionalidades serão definidos posteriormente.',
+     'acao':'Ver módulo'},
     {'id':'cct','nome':'Monitor de CCT','status':'Disponível',
      'descricao':'Convenções e aditivos com abrangência em Alagoas. Consulte novidades, confira resumos e preserve seu histórico.',
      'acao':'Abrir monitor'},
@@ -124,6 +127,17 @@ class HubAgentes:
         texto_sero.pack(fill='x',pady=(0,15))
         c.conteudo.bind('<Configure>',lambda e:texto_sero.configure(wraplength=max(200,e.width)),add='+')
         ttk.Button(c.conteudo,text='Voltar ao hub',command=self.mostrar_inicio).pack(anchor='w')
+        self.perdcomp=tk.Frame(root,background='#f0f5f7',padx=26,pady=26)
+        c=cartao(self.perdcomp);c.pack(fill='x')
+        ttk.Label(c.conteudo,text='PERDCOMP',style='Title.TLabel').pack(anchor='w',pady=(0,12))
+        texto_perdcomp=ttk.Label(c.conteudo,text='A configurar\n\n'
+            'Este módulo será configurado posteriormente. Os documentos, as regras e as funcionalidades '
+            'serão definidos conforme a rotina da equipe.\n\n'
+            'Ainda não realiza cálculos, consultas ou transmissões de PER/DCOMP.',
+            style='Card.TLabel',wraplength=650,justify='left')
+        texto_perdcomp.pack(fill='x',pady=(0,15))
+        c.conteudo.bind('<Configure>',lambda e:texto_perdcomp.configure(wraplength=max(200,e.width)),add='+')
+        ttk.Button(c.conteudo,text='Voltar ao hub',command=self.mostrar_inicio).pack(anchor='w')
         self.calculadoras=tk.Frame(root,background='#f0f5f7',padx=26,pady=26)
         c=cartao(self.calculadoras);c.pack(fill='x')
         ttk.Label(c.conteudo,text='Calculadoras',style='Title.TLabel').pack(anchor='w',pady=(0,12))
@@ -183,6 +197,7 @@ class HubAgentes:
     def ocultar_telas(self):
         self.home.pack_forget();self.admissao.pack_forget();self.auditor_folha.pack_forget()
         self.sero.pack_forget()
+        self.perdcomp.pack_forget()
         self.calculadoras.pack_forget()
         if self.rescisao is not None:self.rescisao.pack_forget()
         if self.tela_monitor is not None:self.tela_monitor.pack_forget()
@@ -224,6 +239,9 @@ class HubAgentes:
         elif identificador=='sero':
             self.sero.pack(fill='both',expand=True)
             self.root.title('Regularização de Obras (SERO) | Cercont — A configurar')
+        elif identificador=='perdcomp':
+            self.perdcomp.pack(fill='both',expand=True)
+            self.root.title('PERDCOMP | Cercont — A configurar')
         elif identificador=='calculadoras':
             self.calculadoras.pack(fill='both',expand=True)
             self.root.title('Calculadoras | Cercont — A configurar')

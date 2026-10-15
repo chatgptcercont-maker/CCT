@@ -1,5 +1,7 @@
 # Hub de agentes — Cercont
 
+**PERDCOMP** está disponível como **A configurar**, com tela na mesma janela e botão **Voltar ao hub**. Os documentos, regras e funcionalidades serão definidos posteriormente; ainda não realiza cálculos, consultas ou transmissões de PER/DCOMP. Para acessar, atualize `hub_agentes.py`, reabra o programa e escolha **Abrir módulo → PERDCOMP** ou seu cartão no hub.
+
 A abertura do programa apresenta um hub para escolher a ferramenta. **Recibo de Rescisão Avulsa** permite informar verbas e valores manualmente, conferir a prévia e gerar PDF ou Excel no modelo enviado pelo usuário; não calcula direitos rescisórios. O **Monitor de CCT — Alagoas** está disponível; **Conferência de Admissão** aguarda as regras que serão definidas pelo usuário e ainda não executa conferências.
 
 ## Monitor Diário de Convenções e Aditivos — Alagoas
