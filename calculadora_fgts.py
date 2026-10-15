@@ -50,8 +50,7 @@ def conferir_dados(dados):
             if valor<=0:raise ValueError('Informe um valor de folha maior que zero para cada base selecionada.')
             valores[campo]=valor
     return {'base':base,'competencia':competencia,'pagamento':pagamento,
-            'regra':regra,'valores':valores,'razao_social':str(dados.get('razao_social','')).strip(),
-            'email':str(dados.get('email','')).strip()}
+            'regra':regra,'valores':valores}
 
 
 def calcular_online(entrada,cliente=None):
@@ -59,10 +58,6 @@ def calcular_online(entrada,cliente=None):
     d=conferir_dados(entrada)
     if entrada.get('regime')!='SEFIP/GRF':
         raise ValueError('Esta tabela calcula recolhimento mensal pelo SEFIP/GRF. FGTS Digital e eSocial doméstico não são atendidos.')
-    if d['competencia']>=date(2024,3,1) and entrada.get('excecao_sefip') is not True:
-        raise ValueError('Desde 03/2024, use FGTS Digital. Para uma exceção legal que permanece no SEFIP (administração pública ou códigos 650/660), confirme o enquadramento antes de simular.')
-    if entrada.get('suspensao') is not True:
-        raise ValueError('Confirme que a competência não possui suspensão ou prorrogação especial do vencimento.')
     consulta=(cliente or ClienteCaixa()).consultar(d['competencia'].strftime('%m/%Y'),d['pagamento'])
     return calcular_com_coeficiente(d,consulta)
 
@@ -84,34 +79,30 @@ class FormularioFGTS:
         area.bind('<Configure>',lambda e:canvas.configure(scrollregion=canvas.bbox('all')))
         self.root.winfo_toplevel().bind('<MouseWheel>',lambda e:canvas.yview_scroll(-int(e.delta/120),'units') if self.root.winfo_ismapped() and not isinstance(e.widget,ttk.Combobox) else None,add='+')
         ttk.Label(area,text='FGTS — Recolhimento em atraso',style='Title.TLabel').pack(anchor='w',pady=(0,8))
-        aviso=ttk.Label(area,text='Consulta automática dos coeficientes oficiais da CAIXA — recolhimento mensal SEFIP/GRF. '
-            'Nenhuma remuneração, razão social ou e-mail é enviada à internet. Não emite guia.',style='Card.TLabel',wraplength=650)
+        aviso=ttk.Label(area,text='Informe os dados e consulte os coeficientes oficiais da CAIXA automaticamente. '
+            'Simulação mensal SEFIP/GRF; não considera suspensões especiais e não emite guia.',style='Card.TLabel',wraplength=650)
         aviso.pack(fill='x',pady=(0,12))
         self.campos={};self.grupos={}
+        campos_area=tk.Frame(area,background='white');campos_area.pack(fill='x')
+        for coluna in range(2):campos_area.columnconfigure(coluna,weight=1,uniform='campos_fgts')
         nomes=[('base','Base do FGTS *'),('competencia','Competência · MM/AAAA *'),
                ('regra','Regra histórica · competências de 10/2001 a 12/2006 *'),
                ('regime','Regime de recolhimento *'),
-               ('razao_social','Razão social · opcional'),('email','E-mail · opcional, apenas local'),
                ('pagamento','Data de pagamento · DD/MM/AAAA *'),
                ('folha','Valor da folha — trabalhadores *'),('aprendiz','Valor da folha — aprendizes *')]
-        for campo,nome in nomes:
-            grupo=tk.Frame(area,background='white');self.grupos[campo]=grupo
-            grupo.pack(fill='x',pady=3)
-            ttk.Label(grupo,text=nome,style='Card.TLabel').pack(anchor='w')
+        rotulos=[]
+        for i,(campo,nome) in enumerate(nomes):
+            grupo=tk.Frame(campos_area,background='white');self.grupos[campo]=grupo
+            grupo.grid(row=i//2,column=i%2,sticky='ew',padx=(0,8) if i%2==0 else (8,0),pady=6)
+            rotulo=ttk.Label(grupo,text=nome,style='Card.TLabel',wraplength=280)
+            rotulo.pack(anchor='w');rotulos.append(rotulo)
             var=tk.StringVar();self.campos[campo]=var
             if campo in ('base','regra','regime'):
                 entrada=ttk.Combobox(grupo,textvariable=var,state='readonly',values={'base':BASES,'regra':REGRAS,'regime':REGIMES}[campo])
             else:entrada=ttk.Entry(grupo,textvariable=var)
             entrada.pack(fill='x',pady=(2,0))
+        campos_area.bind('<Configure>',lambda e:[l.configure(wraplength=max(140,(e.width-32)//2)) for l in rotulos])
         self.campos['regime'].set('SEFIP/GRF')
-        self.excecao_sefip=tk.BooleanVar(value=False)
-        self.sem_suspensao=tk.BooleanVar(value=False)
-        confirmacoes=[]
-        for texto,var in [('A partir de 03/2024: confirmo enquadramento em exceção que permanece no SEFIP.',self.excecao_sefip),
-                          ('Conferi que não há suspensão ou prorrogação especial do vencimento para esta competência.',self.sem_suspensao)]:
-            check=tk.Checkbutton(area,text=texto,variable=var,background='white',activebackground='white',
-                foreground='#194e5a',font=('Segoe UI',10),wraplength=600,justify='left',anchor='w')
-            check.pack(anchor='w',pady=4);confirmacoes.append(check)
         # Campos inativos ficam desabilitados e nunca participam da conferência.
         self.campos['base'].trace_add('write',self.atualizar_campos)
         self.campos['competencia'].trace_add('write',self.atualizar_campos)
@@ -120,16 +111,65 @@ class FormularioFGTS:
         self.botao_calcular=ttk.Button(acoes,text='Buscar coeficiente e calcular',command=self.calcular)
         self.botao_calcular.pack(side='left',padx=8)
         ttk.Button(acoes,text='Limpar',command=self.limpar).pack(side='left')
-        self.resultado=tk.StringVar(value='Preencha os dados para conferência. Nenhum valor atualizado foi calculado.')
-        for var in (self.excecao_sefip,self.sem_suspensao):
-            var.trace_add('write',lambda *args:self.resultado.set('Enquadramento alterado. Calcule novamente.'))
+        self.resultado=tk.StringVar(value='Preencha os dados para iniciar.')
         for campo,var in self.campos.items():
             if campo not in ('base','competencia'):
-                var.trace_add('write',lambda *args:self.resultado.set('Dados alterados. Confira novamente; nenhum valor atualizado foi calculado.'))
+                var.trace_add('write',self.invalidar_resultado)
         resultado=ttk.Label(area,textvariable=self.resultado,style='Card.TLabel',wraplength=650,justify='left')
         resultado.pack(fill='x',pady=(0,12))
-        area.bind('<Configure>',lambda e:[l.configure(wraplength=max(200,e.width-32)) for l in (aviso,resultado,*confirmacoes)],add='+')
+        self.criar_painel_resultado(area)
+        area.bind('<Configure>',lambda e:[l.configure(wraplength=max(200,e.width-64)) for l in (aviso,resultado,self.nota_resultado)],add='+')
         self.atualizar_campos()
+
+    def criar_painel_resultado(self,parent):
+        tk=self.tk;ttk=self.ttk
+        self.painel_resultado=tk.Frame(parent,background='#f0f5f7',padx=16,pady=16)
+        tk.Label(self.painel_resultado,text='Resultado da simulação',font=('Segoe UI',15,'bold'),
+            background='#f0f5f7',foreground='#064d47').pack(anchor='w')
+        self.subtitulo_resultado=tk.StringVar()
+        tk.Label(self.painel_resultado,textvariable=self.subtitulo_resultado,font=('Segoe UI',10),
+            background='#f0f5f7',foreground='#638193').pack(anchor='w',pady=(4,14))
+        grade=tk.Frame(self.painel_resultado,background='#f0f5f7');grade.pack(fill='x')
+        self.valores_resultado={}
+        for i,(chave,titulo) in enumerate([('base','Base de remuneração'),('principal','FGTS principal'),
+                                         ('encargos','Encargos'),('total','Total atualizado')]):
+            destaque=chave=='total';fundo='#064d47' if destaque else 'white'
+            cartao=tk.Frame(grade,background=fundo,padx=16,pady=14,highlightthickness=1,
+                highlightbackground='#064d47' if destaque else '#dde7ec')
+            cartao.grid(row=i//2,column=i%2,sticky='nsew',padx=4,pady=4)
+            grade.columnconfigure(i%2,weight=1,uniform='resultado_fgts')
+            grade.rowconfigure(i//2,weight=1,uniform='resultado_fgts')
+            tk.Label(cartao,text=titulo,font=('Segoe UI',10),background=fundo,
+                foreground='#d9e7e4' if destaque else '#638193').pack(anchor='w')
+            var=tk.StringVar(value='');self.valores_resultado[chave]=var
+            tk.Label(cartao,textvariable=var,font=('Segoe UI',19,'bold'),background=fundo,
+                foreground='white' if destaque else '#064d47').pack(anchor='w',pady=(6,0))
+        self.tabela_resultado=ttk.Treeview(self.painel_resultado,
+            columns=('grupo','base','principal','encargos','total'),show='headings',height=2)
+        for nome,titulo in [('grupo','Grupo'),('base','Base'),('principal','FGTS'),('encargos','Encargos'),('total','Total')]:
+            self.tabela_resultado.heading(nome,text=titulo)
+            self.tabela_resultado.column(nome,width=120 if nome=='grupo' else 100,minwidth=65,anchor='w' if nome=='grupo' else 'e')
+        self.nota_resultado=tk.Label(self.painel_resultado,text='',font=('Segoe UI',10),background='#f0f5f7',
+            foreground='#638193',wraplength=600,justify='left')
+        self.nota_resultado.pack(fill='x',pady=(12,8))
+        self.botao_detalhes=ttk.Button(self.painel_resultado,text='Ver memória de cálculo e fonte',command=self.alternar_detalhes)
+        self.botao_detalhes.pack(anchor='w')
+        self.detalhes_frame=tk.Frame(self.painel_resultado,background='#f0f5f7')
+        self.texto_detalhes=tk.Text(self.detalhes_frame,height=12,wrap='word',font=('Segoe UI',10),
+            background='white',foreground='#194e5a',relief='flat',padx=12,pady=12,state='disabled')
+        barra=ttk.Scrollbar(self.detalhes_frame,command=self.texto_detalhes.yview)
+        barra.pack(side='right',fill='y');self.texto_detalhes.pack(fill='both',expand=True)
+        self.texto_detalhes.configure(yscrollcommand=barra.set)
+
+    def alternar_detalhes(self):
+        if self.detalhes_frame.winfo_manager():
+            self.detalhes_frame.pack_forget();self.botao_detalhes.configure(text='Ver memória de cálculo e fonte')
+        else:
+            self.detalhes_frame.pack(fill='x',pady=(10,0));self.botao_detalhes.configure(text='Ocultar memória de cálculo e fonte')
+
+    def invalidar_resultado(self,*args):
+        if hasattr(self,'painel_resultado'):self.painel_resultado.pack_forget()
+        if hasattr(self,'resultado'):self.resultado.set('Dados alterados. Calcule novamente para atualizar o resultado.')
 
     def atualizar_campos(self,*args):
         base=self.campos['base'].get()
@@ -141,10 +181,11 @@ class FormularioFGTS:
                 if isinstance(widget,(self.ttk.Entry,self.ttk.Combobox)):
                     widget.configure(state=('readonly' if campo=='regra' else 'normal') if ativo else 'disabled')
             if not ativo:self.campos[campo].set('')
-        if hasattr(self,'resultado'):self.resultado.set('Dados alterados. Confira novamente; nenhum valor atualizado foi calculado.')
+        self.invalidar_resultado()
 
     def conferir(self):
         from recibo_rescisao import reais
+        self.painel_resultado.pack_forget()
         try:
             d=conferir_dados({k:v.get() for k,v in self.campos.items()})
             linhas=['Dados de entrada conferidos — cálculo não realizado.',
@@ -158,17 +199,16 @@ class FormularioFGTS:
 
     def limpar(self):
         for var in self.campos.values():var.set('')
-        self.excecao_sefip.set(False);self.sem_suspensao.set(False)
+        self.painel_resultado.pack_forget()
         self.resultado.set('Formulário limpo. Nenhum cálculo realizado.')
 
     def entrada_atual(self):
-        entrada={k:v.get() for k,v in self.campos.items()}
-        entrada.update(excecao_sefip=self.excecao_sefip.get(),suspensao=self.sem_suspensao.get())
-        return entrada
+        return {k:v.get() for k,v in self.campos.items()}
 
     def calcular(self):
         if self.ocupado:return
         entrada=self.entrada_atual()
+        self.painel_resultado.pack_forget()
         self.ocupado=True;self.botao_calcular.configure(state='disabled')
         self.resultado.set('Consultando o catálogo público e o edital da CAIXA. Aguarde…')
         def executar():
@@ -202,4 +242,27 @@ class FormularioFGTS:
             'Comparação com arredondamento de centavos: '+reais(resultado['comparacao_arredondada'])+' (não é o critério de truncamento do edital).',
             'Fonte: '+c['fonte'],'Cópia local: '+c['arquivo'],'SHA-256: '+c['sha256'],
             'Simulação para conferência. Não emite guia nem confirma enquadramento jurídico.'])
-        self.resultado.set('\n'.join(linhas))
+        self.apresentar_resultado(entrada,resultado,'\n'.join(linhas))
+
+    def apresentar_resultado(self,entrada,resultado,memoria):
+        from recibo_rescisao import reais
+        partes=resultado['partes'];c=resultado['consulta']
+        valores={'base':sum(p['base'] for p in partes),'principal':sum(p['principal'] for p in partes),
+                 'encargos':sum(p['encargos'] for p in partes),'total':resultado['total']}
+        for chave,var in self.valores_resultado.items():var.set(reais(valores[chave]))
+        self.subtitulo_resultado.set('Competência '+entrada['competencia']+'  •  Pagamento '+entrada['pagamento'])
+        for item in self.tabela_resultado.get_children():self.tabela_resultado.delete(item)
+        for p in partes:
+            self.tabela_resultado.insert('','end',values=('Aprendizes' if p['campo']=='aprendiz' else 'Trabalhadores',
+                reais(p['base']),reais(p['principal']),reais(p['encargos']),reais(p['total'])))
+        self.tabela_resultado.pack_forget()
+        if len(partes)>1:self.tabela_resultado.pack(fill='x',pady=(12,0),before=self.nota_resultado)
+        self.nota_resultado.configure(text='Coeficiente CAIXA: '+str(c['coeficiente']).replace('.',',')+
+            '  •  Tabela 7, página '+str(c['pagina'])+'\nTotal truncado em centavos conforme o edital. '
+            'Encargos incluem atualização, juros, multa e contribuição social quando devida. '
+            'Suspensões especiais não consideradas; aplicável ao regime SEFIP/GRF selecionado.')
+        self.detalhes_frame.pack_forget();self.botao_detalhes.configure(text='Ver memória de cálculo e fonte')
+        self.texto_detalhes.configure(state='normal');self.texto_detalhes.delete('1.0','end')
+        self.texto_detalhes.insert('1.0',memoria);self.texto_detalhes.configure(state='disabled')
+        self.resultado.set('Consulta concluída com coeficiente oficial da CAIXA.')
+        self.painel_resultado.pack(fill='x',pady=(4,12))

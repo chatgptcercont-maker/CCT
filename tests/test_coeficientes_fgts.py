@@ -29,7 +29,7 @@ PAGAMENTO
 
 def entrada():
     return {'base':'Trabalhadores','competencia':'02/2024','pagamento':'20/10/2026',
-            'folha':'1200','regime':'SEFIP/GRF','suspensao':True}
+            'folha':'1200','regime':'SEFIP/GRF'}
 
 
 def consulta(comp='02/2024',coef='0.104665349'):
@@ -75,12 +75,19 @@ class CoeficientesTests(unittest.TestCase):
         for c in [consulta('01/2024'),dict(consulta(),pagamento=date(2026,10,19))]:
             with self.assertRaises(CoeficienteIndisponivel):calcular_com_coeficiente(conferir_dados(entrada()),c)
 
-    def test_regimes_e_suspensoes_bloqueiam_antes_da_internet(self):
-        for alteracao in [{'regime':'FGTS Digital'},{'regime':'eSocial doméstico'},
-                          {'suspensao':False},{'competencia':'03/2024'}]:
+    def test_regimes_nao_atendidos_bloqueiam_antes_da_internet(self):
+        for alteracao in [{'regime':'FGTS Digital'},{'regime':'eSocial doméstico'}]:
             d=entrada();d.update(alteracao);cliente=MagicMock()
             with self.assertRaises(ValueError):calcular_online(d,cliente)
             cliente.consultar.assert_not_called()
+
+    def test_sefip_simula_sem_marcacoes_ou_identificacao(self):
+        d=entrada();d['competencia']='03/2024';cliente=MagicMock()
+        cliente.consultar.return_value=consulta('03/2024')
+        r=calcular_online(d,cliente)
+        self.assertEqual(r['total'],Decimal('125.59'))
+        cliente.consultar.assert_called_once_with('03/2024',date(2026,10,20))
+        self.assertNotIn('razao_social',conferir_dados(d));self.assertNotIn('email',conferir_dados(d))
 
     def test_somente_https_caixa_sem_credenciais(self):
         for u in ['http://www.caixa.gov.br/a','https://outro.exemplo/a',

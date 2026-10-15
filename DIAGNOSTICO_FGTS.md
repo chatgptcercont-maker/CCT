@@ -37,14 +37,16 @@ Páginas 3 e 4, itens 1.1, 1.2 e 1.4:
 - Aprendizes, sem contribuição social: fator 0,25 sobre esse produto.
 - Contribuição social de 0,5%: competências 10/2001 a 12/2006, observadas as isenções do quadro 1.
 - Trabalhadores padrão com contribuição social devida: fator 1,0625; aprendizes com contribuição social devida: fator 0,3125.
-- A partir de 03/2024 o recolhimento regular migra ao FGTS Digital, observadas as exceções descritas no edital. A aplicação bloqueia esse regime e exige confirmação explícita para exceções SEFIP.
+- A partir de 03/2024 o recolhimento regular migra ao FGTS Digital, observadas as exceções descritas no edital. A aplicação bloqueia o regime FGTS Digital. A seleção de SEFIP/GRF define o regime a simular, sem exigir uma marcação adicional ou validar o enquadramento legal.
 
 Não estão implementados enquadramentos especiais por categoria, cálculo rescisório ou suspensões de vencimento. Não se infere automaticamente a situação jurídica do empregador.
 
 ## Verificações e limites
 
-`python -m unittest discover -s tests -q`: 99 testes passaram. Incluem seleção exata de coluna/bloco/data, ausência de célula, vigência, duplicidade, fatores de aprendiz/contribuição social, truncamento, comparação arredondada, proteção contra URLs externas, HTTP 403 sem tentativas de contorno, validação de regime e cópia local do edital.
+`python -m unittest discover -s tests -q`: 100 testes passaram. Incluem seleção exata de coluna/bloco/data, ausência de célula, vigência, duplicidade, fatores de aprendiz/contribuição social, truncamento, comparação arredondada, proteção contra URLs externas, HTTP 403 sem tentativas de contorno, validação de regime e cópia local do edital.
 
 Esses testes usam dados sintéticos e mocks onde indicado. A comprovação de acesso real é a consulta descrita acima, distinta da suíte. A aparência e os cliques completos no Windows ainda não foram testados neste ambiente.
 
 A busca automática é limitada aos editais mensais individualmente listados. Datas cobertas somente por ZIPs anuais agrupados ou ainda não publicadas são recusadas. Nunca se substitui uma célula ausente por data próxima, coeficiente da imagem ou extrapolação. Falhas da CAIXA e alterações de formato são informadas; a ferramenta não emite guias nem confirma pagamento.
+
+A interface foi simplificada a pedido do usuário: retirados razão social, e-mail e as duas confirmações obrigatórias. A simulação SEFIP/GRF passa a funcionar sem essas marcações, inclusive após 03/2024; isso não confirma enquadramento legal nem considera suspensões especiais. O resultado usa cartões de totais, tabela por grupo e memória de cálculo expansível.
