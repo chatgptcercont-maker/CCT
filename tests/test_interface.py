@@ -66,6 +66,30 @@ class InterfaceTests(unittest.TestCase):
             setattr(app,nome,MagicMock())
         return app
 
+    def test_datas_invalidas_nao_iniciam_consulta(self):
+        app=self.app_sem_tela();app.ocupado=False
+        app.controle=Valor();app.periodo=Valor('Período personalizado')
+        for inicial, final in [('', ''), ('1/10/2026','08/10/2026'),
+                               ('31/02/2026','08/10/2026'),
+                               ('09/10/2026','08/10/2026'),
+                               ('2026-10-01','2026-10-08')]:
+            with self.subTest(inicial=inicial,final=final):
+                app.data_inicial=Valor(inicial);app.data_final=Valor(final)
+                with patch('interface.messagebox.showerror') as erro, \
+                        patch('interface.threading.Thread') as thread, \
+                        patch('interface.salvar_config') as salvar:
+                    app.iniciar()
+                erro.assert_called_once();thread.assert_not_called();salvar.assert_not_called()
+                self.assertFalse(app.ocupado)
+
+    def test_campos_personalizados_aparecem_apenas_na_opcao(self):
+        app=self.app_sem_tela();app.periodo=Valor('Período personalizado')
+        app.datas_personalizadas=MagicMock()
+        app.atualizar_datas()
+        app.datas_personalizadas.pack.assert_called_once_with(fill='x')
+        app.periodo.set('Ontem');app.atualizar_datas()
+        app.datas_personalizadas.pack_forget.assert_called_once()
+
     def test_percentual_usa_contagem_real_e_aguarda_total(self):
         app=self.app_sem_tela()
         app.atualizar_percentual({'total':None})
@@ -154,6 +178,18 @@ class InterfaceTests(unittest.TestCase):
                 app.iniciar();app.atualizar()
                 self.assertIsNone(online.call_args.kwargs['ano'])
                 self.assertTrue(online.call_args.kwargs['ontem'])
+                app.periodo.set('Período personalizado')
+                app.data_inicial=Valor('01/10/2026');app.data_final=Valor('08/10/2026')
+                app.campo_data_inicial=MagicMock();app.campo_data_final=MagicMock()
+                online.reset_mock()
+                app.iniciar();app.atualizar()
+                from datetime import date
+                self.assertEqual(online.call_args.kwargs['inicio'],date(2026,10,1))
+                self.assertEqual(online.call_args.kwargs['fim'],date(2026,10,8))
+                self.assertEqual(app.config['data_inicial'],'01/10/2026')
+                self.assertEqual(app.config['data_final'],'08/10/2026')
+                app.campo_data_inicial.configure.assert_any_call(state='disabled')
+                app.campo_data_inicial.configure.assert_called_with(state='normal')
 
 
 if __name__ == '__main__':unittest.main()

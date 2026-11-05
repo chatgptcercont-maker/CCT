@@ -256,3 +256,11 @@ Escolha sempre um nome de arquivo novo: arquivos existentes não são sobrescrit
 Para atualizar uma instalação existente, substitua **recibo_rescisao.py** e **modulo_rescisao.py**, acrescente **modelo_rescisao.py** e **assets/modelo_rescisao.json**, preservando a pasta `assets`. Continue abrindo **abrir_monitor.bat**. Não há novas dependências ou comandos de preparação; o módulo usa openpyxl e pypdf já utilizados no projeto.
 
 Foram executados **82 testes locais**, incluindo geração e releitura de PDF com duas páginas e Excel com duas abas, consistência dos dados, valores manuais, observações, preservação de arquivos, prevenção de fórmulas e confirmação explícita de pagamento. Apenas dados fictícios foram usados nas saídas de teste. O PDF foi também renderizado para revisão visual. A interface e a impressão pelo Excel no Windows ainda precisam ser conferidas no computador do usuário.
+
+### Período personalizado
+
+No campo **Período de registro**, selecione **Período personalizado** e preencha
+**Data inicial** e **Data final** no formato **DD/MM/AAAA**. As duas datas estão
+incluídas; para consultar um único dia, informe a mesma data nos dois campos.
+Datas inexistentes, campos vazios e data inicial posterior à final impedem o início
+da consulta. O intervalo fica salvo para a próxima abertura do Monitor.

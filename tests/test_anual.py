@@ -12,6 +12,42 @@ from exemplos.criar_demo import pdf_ficticio, documento
 class AnualTests(unittest.TestCase):
     hoje=date(2026,10,9)
 
+    def test_periodo_personalizado_inclusivo_e_dia_unico(self):
+        for inicio,fim in [(date(2025,12,31),date(2026,1,2)),
+                            (date(2026,10,8),date(2026,10,8))]:
+            self.assertEqual(online.periodo_consulta(self.hoje,inicio=inicio,fim=fim),(inicio,fim))
+            for dia in (inicio,fim):
+                monitor.extrair(documento(data=dia.strftime('%d/%m/%Y')),fim,inicio)
+            from datetime import timedelta
+            for dia in (inicio-timedelta(days=1),fim+timedelta(days=1)):
+                with self.assertRaisesRegex(ValueError,'fora do período'):
+                    monitor.extrair(documento(data=dia.strftime('%d/%m/%Y')),fim,inicio)
+
+    def test_periodo_personalizado_exige_limites_e_opcao_unica(self):
+        for argumentos in [dict(inicio=self.hoje),dict(fim=self.hoje),
+                           dict(inicio=self.hoje,fim=date(2026,1,1)),
+                           dict(inicio=self.hoje,fim=self.hoje,ano=2026),
+                           dict(inicio=self.hoje,fim=self.hoje,ontem=True)]:
+            with self.subTest(argumentos=argumentos),self.assertRaises(ValueError):
+                online.periodo_consulta(self.hoje,**argumentos)
+
+    def test_execucao_personalizada_propaga_datas_e_relatorios(self):
+        inicio,fim=date(2026,1,1),date(2026,1,2)
+        with tempfile.TemporaryDirectory() as tmp:
+            def coletar(browser,docs,hoje,eventos,progresso,inicio=None,catalogo=None):
+                self.assertEqual((inicio,hoje),(date(2026,1,1),fim))
+                itens=[]
+                for indice,dia in enumerate((inicio,hoje),1):
+                    nome=f'limite{indice}.pdf'
+                    pdf_ficticio(docs/nome,documento(numero=f'AL00000{indice}/2026',data=dia.strftime('%d/%m/%Y')))
+                    itens.append({'registro':f'AL00000{indice}/2026','arquivo':'documentos/'+nome,'fonte':online.URL})
+                return itens,[],{tipo+':'+area:2 for tipo,area in online.PESQUISAS}
+            with patch.object(online,'coletar',side_effect=coletar),patch('playwright.sync_api.sync_playwright'):
+                r=online.executar_online(raiz=Path(tmp),inicio=inicio,fim=fim)
+            self.assertTrue(r['completa'])
+            self.assertIn('01/01/2026 a 02/01/2026',r['resumo'])
+            self.assertEqual(load_workbook(r['controle']).active.max_row,3)
+
     def test_ontem_apenas_um_dia_inclusive_na_virada_do_ano(self):
         self.assertEqual(online.periodo_consulta(date(2026,10,12),ontem=True),(date(2026,10,11),date(2026,10,11)))
         self.assertEqual(online.periodo_consulta(date(2026,1,1),ontem=True),(date(2025,12,31),date(2025,12,31)))

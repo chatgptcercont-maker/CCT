@@ -42,7 +42,15 @@ def hoje_alagoas():
     return datetime.now(ZoneInfo('America/Maceio')).date()
 
 
-def periodo_consulta(hoje, ano=None, ontem=False):
+def periodo_consulta(hoje, ano=None, ontem=False, inicio=None, fim=None):
+    if inicio is not None or fim is not None:
+        if ano is not None or ontem:
+            raise ValueError('Escolha apenas um período de consulta')
+        if inicio is None or fim is None:
+            raise ValueError('Informe a data inicial e a data final')
+        if inicio > fim:
+            raise ValueError('A data inicial deve ser anterior ou igual à data final')
+        return inicio, fim
     if ontem:
         if ano is not None:
             raise ValueError('Escolha o ano ou ontem, não os dois períodos')
@@ -356,9 +364,9 @@ def gerar_relatorio(catalogo, instrumentos, pasta, resultado, inicio, fim, compl
     (resultado/'instrumentos_consultados_AL.txt').write_text('\n'.join(texto)+'\n', encoding='utf-8')
 
 
-def executar_online(controle=None, raiz=Path('saidas'), aba=None, progresso=lambda mensagem: None, ano=None, ontem=False):
+def executar_online(controle=None, raiz=Path('saidas'), aba=None, progresso=lambda mensagem: None, ano=None, ontem=False, inicio=None, fim=None):
     hoje = hoje_alagoas()
-    inicio, fim = periodo_consulta(hoje, ano, ontem)
+    inicio, fim = periodo_consulta(hoje, ano, ontem, inicio, fim)
     pasta = raiz / ('online_'+datetime.now().strftime('%Y%m%d_%H%M%S')+'_'+uuid.uuid4().hex[:8])
     pasta.mkdir(parents=True, exist_ok=False)
     docs = pasta/'documentos'; docs.mkdir()

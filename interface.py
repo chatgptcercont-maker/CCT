@@ -11,7 +11,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from tkinter import font as tkfont
 
-from consulta_online import executar_online
+from consulta_online import executar_online, periodo_consulta, hoje_alagoas
 from monitor import REGEX_REGISTRO
 
 BASE = Path(__file__).resolve().parent
@@ -110,6 +110,8 @@ class Aplicacao:
         self.controle = tk.StringVar(value=self.config.get('controle', ''))
         self.aba = tk.StringVar(value=self.config.get('aba', ''))
         self.periodo = tk.StringVar(value=self.config.get('periodo', 'Ano de 2026'))
+        self.data_inicial = tk.StringVar(value=self.config.get('data_inicial', ''))
+        self.data_final = tk.StringVar(value=self.config.get('data_final', ''))
         self.status = tk.StringVar(value='Pronto para consultar a fonte oficial.')
         self.percentual = tk.DoubleVar(value=0)
         self.indicador = tk.StringVar(value='Nenhuma consulta em andamento')
@@ -189,8 +191,19 @@ class Aplicacao:
         self.grupo_periodo = tk.Frame(self.campos, background='white')
         self.grupo_aba = tk.Frame(self.campos, background='white')
         ttk.Label(self.grupo_periodo, text='Período de registro', style='Card.TLabel').pack(anchor='w')
-        self.campo_periodo = ttk.Combobox(self.grupo_periodo, textvariable=self.periodo, values=['Ano de 2026','Últimos 7 dias','Ontem'], state='readonly', width=22)
+        self.campo_periodo = ttk.Combobox(self.grupo_periodo, textvariable=self.periodo, values=['Ano de 2026','Últimos 7 dias','Ontem','Período personalizado'], state='readonly', width=22)
         self.campo_periodo.pack(fill='x', pady=(5,10))
+        self.datas_personalizadas = tk.Frame(self.grupo_periodo, background='white')
+        for rotulo, variavel, atributo in [
+                ('Data inicial (DD/MM/AAAA)', self.data_inicial, 'campo_data_inicial'),
+                ('Data final (DD/MM/AAAA)', self.data_final, 'campo_data_final')]:
+            ttk.Label(self.datas_personalizadas, text=rotulo, style='Card.TLabel').pack(anchor='w')
+            campo = ttk.Entry(self.datas_personalizadas, textvariable=variavel, width=12)
+            campo.pack(fill='x', pady=(5,10))
+            setattr(self, atributo, campo)
+        ttk.Label(self.datas_personalizadas, text='As duas datas estão incluídas.', style='Muted.TLabel').pack(anchor='w')
+        self.campo_periodo.bind('<<ComboboxSelected>>', self.atualizar_datas)
+        self.atualizar_datas()
         ttk.Label(self.grupo_aba, text='Aba da planilha · opcional', style='Card.TLabel').pack(anchor='w')
         self.campo_aba = ttk.Entry(self.grupo_aba, textvariable=self.aba); self.campo_aba.pack(fill='x', pady=(5,10))
         ttk.Label(filtros, text='Planilha de controle · opcional na primeira consulta', style='Card.TLabel').pack(anchor='w')
@@ -364,6 +377,12 @@ class Aplicacao:
             self.controle.set(arquivo)
             self.registrar_etapa('Planilha de controle selecionada: '+Path(arquivo).name)
 
+    def atualizar_datas(self, evento=None):
+        if self.periodo.get() == 'Período personalizado':
+            self.datas_personalizadas.pack(fill='x')
+        else:
+            self.datas_personalizadas.pack_forget()
+
     def iniciar(self):
         if self.ocupado:
             return
@@ -373,6 +392,18 @@ class Aplicacao:
             messagebox.showerror('Controle indisponível', 'O controle selecionado não existe. Corrija o caminho antes de consultar.')
             return
         ano = 2026 if self.periodo.get() == 'Ano de 2026' else None
+        inicio = fim = None
+        if self.periodo.get() == 'Período personalizado':
+            try:
+                datas = [self.data_inicial.get().strip(), self.data_final.get().strip()]
+                if not all(re.fullmatch(r'[0-9]{2}/[0-9]{2}/[0-9]{4}', data) for data in datas):
+                    raise ValueError('Informe as duas datas no formato DD/MM/AAAA')
+                inicio, fim = [datetime.strptime(data, '%d/%m/%Y').date() for data in datas]
+                periodo_consulta(hoje_alagoas(), inicio=inicio, fim=fim)
+            except ValueError:
+                messagebox.showerror('Período inválido', 'Informe datas válidas em DD/MM/AAAA. A data inicial deve ser anterior ou igual à final.')
+                return
+            self.config.update({'data_inicial': datas[0], 'data_final': datas[1]})
         self.config.update({'controle': str(controle) if controle else '', 'aba': self.aba.get().strip(), 'periodo': self.periodo.get()})
         try:
             salvar_config(self.config)
@@ -382,16 +413,20 @@ class Aplicacao:
         for widget in [self.consultar, self.escolher, self.campo_controle, self.campo_aba]:
             widget.configure(state='disabled')
         self.campo_periodo.configure(state='disabled')
+        if self.periodo.get() == 'Período personalizado':
+            self.campo_data_inicial.configure(state='disabled')
+            self.campo_data_final.configure(state='disabled')
         self.status.set('Consultando o Mediador…'); self.mostrar('Consulta em andamento. Aguarde o relatório.')
         self.atualizar_percentual({'total':None})
         self.registrar_etapa('Consulta iniciada · '+self.periodo.get())
         self.abas_resultados.select(0)
         aba = self.aba.get().strip() or None
-        threading.Thread(target=self.trabalhar, args=(controle, aba, ano, self.periodo.get() == 'Ontem'), daemon=True).start()
+        threading.Thread(target=self.trabalhar, args=(controle, aba, ano, self.periodo.get() == 'Ontem', inicio, fim), daemon=True).start()
 
-    def trabalhar(self, controle, aba, ano=None, ontem=False):
+    def trabalhar(self, controle, aba, ano=None, ontem=False, inicio=None, fim=None):
         try:
-            resultado = executar_online(controle, BASE/'saidas', aba, lambda m: self.fila.put(('progresso', m)), ano=ano, ontem=ontem)
+            intervalo = {'inicio': inicio, 'fim': fim} if inicio is not None else {}
+            resultado = executar_online(controle, BASE/'saidas', aba, lambda m: self.fila.put(('progresso', m)), ano=ano, ontem=ontem, **intervalo)
             self.fila.put(('progresso', 'Organizando as referências documentais do painel…'))
             try:
                 from analise_resultados import carregar_consulta
@@ -423,6 +458,10 @@ class Aplicacao:
                     for widget in [self.consultar, self.escolher, self.campo_controle, self.campo_aba]:
                         widget.configure(state='normal')
                     self.campo_periodo.configure(state='readonly')
+                    for nome in ('campo_data_inicial', 'campo_data_final'):
+                        campo = getattr(self, nome, None)
+                        if campo is not None:
+                            campo.configure(state='normal')
                     if tipo == 'erro':
                         self.status.set('Consulta não concluída.'); self.mostrar(dado)
                         self.registrar_etapa(dado); self.indicador.set('Execução interrompida · consulta não confirmada')
